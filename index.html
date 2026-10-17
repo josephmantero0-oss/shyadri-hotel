@@ -232,7 +232,7 @@
     },
     "supabase": {
       "url": "https://uvjqhfvxghtrvogdmzxz.supabase.co",
-      "key": "",
+      "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2anFoZnZ4Z2h0cnZvZ2Rtenh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4MDY4MTMsImV4cCI6MjEwNzM4MjgxM30.uMQChyviNzD074wWGcBYu77XdKosuJk6sMBMVWBAoa0",
       "connected": true
     },
     "wifi": {
@@ -1529,32 +1529,6 @@
             <button class="btn g" data-act="addrule">+ Add Rule</button>
           </div>
         `;
-      } else if (adminSubView === 'db') {
-        content = `
-          <div class="card">
-            <h2>⚡ Supabase Cloud Database</h2>
-            <p class="mu" style="font-size:.9rem;">Connected Endpoint: <code>https://uvjqhfvxghtrvogdmzxz.supabase.co/rest/v1/</code></p>
-            <div class="kv">
-              <span class="mu">Live Cloud Feed</span>
-              <b style="color:${(sbClient && S.supabase.key) ? 'var(--ok)' : 'var(--oc)'};">
-                ${(sbClient && S.supabase.key) ? '● Realtime Live & Connected' : '⚠️ Paste Anon Key below to activate multi-device sync'}
-              </b>
-            </div>
-            <div class="kv" style="margin-top:8px;">
-              <span class="mu">Total Orders Recorded</span>
-              <b>${ordersList.length}</b>
-            </div>
-
-            <div style="margin-top:14px; border-top:1.5px dashed rgba(255,247,234,.3); padding-top:10px;">
-              <label>Supabase Anon Key (from Project Settings ➡️ API)</label>
-              <input id="admin_sb_key" type="password" value="${esc(S.supabase ? S.supabase.key : '')}" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6...">
-              <button class="btn sm" data-act="save_admin_sb_key" style="margin-top:4px;">Connect &amp; Sync All Devices</button>
-            </div>
-            <p style="font-size:.82rem; color:var(--cr2); margin-top:8px;">
-              Once connected, any order accepted by staff will update on the guest screen within milliseconds across all phones and tablets.
-            </p>
-          </div>
-        `;
       }
 
       return `
@@ -1577,7 +1551,6 @@
             <button class="pill ${adminSubView === 'notices' ? 'on' : ''}" data-act="admin_tab" data-t="notices">📢 Notices</button>
             <button class="pill ${adminSubView === 'menu_mgmt' ? 'on' : ''}" data-act="admin_tab" data-t="menu_mgmt">🍛 Menu</button>
             <button class="pill ${adminSubView === 'hotel_info' ? 'on' : ''}" data-act="admin_tab" data-t="hotel_info">⚙️ Info & WhatsApp</button>
-            <button class="pill ${adminSubView === 'db' ? 'on' : ''}" data-act="admin_tab" data-t="db">⚡ Database</button>
           </div>
 
           ${content}
@@ -1909,16 +1882,6 @@
       else if (a === 'delrule') {
         S.rules.splice(i, 1);
         render();
-      }
-      else if (a === 'save_admin_sb_key') {
-        const k = $('#admin_sb_key').value.trim();
-        if (k) {
-          S.supabase.key = k;
-          try { localStorage.setItem('shyadri_sb_key', k); }catch(e){}
-          initSupabase();
-          toast('Live Cloud Feed Connected ✓');
-          render();
-        }
       }
 
       // Fun & Copy
