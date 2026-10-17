@@ -317,6 +317,13 @@
     let currentView = 'guest'; // 'guest', 'track'
     let currentTab = 'menu';   // In guest view: 'menu', 'services', 'wifi', 'rules'
     let admin = false, login = false;
+    try {
+      const sess = sessionStorage.getItem('sh_admin_session');
+      if (sess) {
+        const p = JSON.parse(sess);
+        if (p && p.active) admin = true;
+      }
+    } catch(e){}
     let adminSubView = 'kitchen'; // 'kitchen', 'hotel_dash', 'notices', 'menu_mgmt', 'hotel_info', 'db'
     let staffDashFilter = 'all';
     let mcat = 0, q = '', vegOnly = false;
@@ -960,7 +967,7 @@
       `;
     }
 
-    // Live Track Orders Page (Customer Privacy Guaranteed)
+    // Private Room Order Tracking Page (Completely Isolated for Each Guest)
     function trackView() {
       const myRoom = guestRoomNumber.trim();
       const myOrders = myRoom ? ordersList.filter(o => o.room_number.toLowerCase() === myRoom.toLowerCase()) : [];
@@ -968,73 +975,53 @@
       return `
         <div class="wrap">
           <div class="bar">
-            <h2 style="margin:0">📍 Track Room Orders</h2>
+            <h2 style="margin:0">📍 My Room Orders</h2>
             <button class="btn sm g" data-act="nav" data-v="guest">← Back to Menu</button>
           </div>
 
           <!-- My Room Tracking Box -->
           <div class="card rv" style="background:#5a1906; border-color:var(--oc);">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-              <h3 style="color:var(--oc)">My Room Status</h3>
+              <h3 style="color:var(--oc)">Room Order Status</h3>
               <span class="room-tag">${myRoom ? 'Room ' + esc(myRoom) : 'Enter Room #'}</span>
             </div>
             
-            <div style="display:flex; gap:8px; margin-top:10px;">
-              <input id="track_room_input" placeholder="Enter room number (e.g. 204)" value="${esc(myRoom)}" style="margin:0; flex:1">
-              <button class="btn" data-act="set_track_room">View</button>
-            </div>
-
-            <div style="margin-top:14px;">
-              ${!myRoom ? '<p class="mu">Enter your room number above to see your order timeline.</p>' :
-                myOrders.length === 0 ? '<p class="mu">No active orders found for Room ' + esc(myRoom) + '. Place an order from the menu!</p>' :
-                myOrders.map(o => `
-                  <div style="background:var(--cream); color:var(--ink); padding:12px; border-radius:12px; margin-bottom:10px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                      <b>Order #${esc(o.id || o.order_code)}</b>
-                      ${getStatusBadge(o.status)}
-                    </div>
-                    <div style="font-size:.9rem; margin:6px 0; color:#5d4037;">
-                      ${(o.items || []).map(it => `• ${esc(it.n)} x ${it.qty}`).join('<br>')}
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed #ccc; padding-top:6px; font-weight:700;">
-                      <span>Total: ₹${esc(o.total_price)}</span>
-                      <small style="color:#7a4a35;">${timeAgo(o.created_at)}</small>
-                    </div>
-                    <div style="display:flex; gap:6px; margin-top:8px;">
-                      <a class="btn sm wa" href="${buildOrderWhatsAppMessage(o).url}" target="_blank">📲 WhatsApp Staff</a>
-                      <a class="btn sm sms" href="${buildOrderWhatsAppMessage(o).smsUrl}">💬 SMS Staff</a>
-                    </div>
-                  </div>
-                `).join('')
-              }
-            </div>
-          </div>
-
-          <!-- All Rooms Public Live Board -->
-          <div class="card rv">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <h2>🏨 Live Hotel Order Board</h2>
-              <span class="mu" style="font-size:.8rem;"><span class="live-dot"></span> Live</span>
-            </div>
-            <p class="mu" style="font-size:.82rem; margin-top:-4px; line-height:1.3;">
-              🛡️ <i>Guest Privacy Notice:</i> To protect your security, only the <b>Room Number</b> and <b>Order Price</b> are displayed on this public board.
+            <p class="mu" style="font-size:.84rem; margin:6px 0 10px;">
+              🔒 <i>Private Session:</i> Only orders for your room are displayed here. Your orders will never be mixed or visible to other guests.
             </p>
 
-            <div style="margin-top:14px;">
-              ${ordersList.length === 0 ? '<p class="mu">No orders in queue.</p>' :
-                ordersList.map(o => `
-                  <div class="public-order-row">
-                    <div style="display:flex; align-items:center; gap:12px;">
-                      <span class="room-tag">Room ${esc(o.room_number)}</span>
+            <div style="display:flex; gap:8px; margin-top:8px;">
+              <input id="track_room_input" placeholder="Enter your room number (e.g. 204)" value="${esc(myRoom)}" style="margin:0; flex:1">
+              <button class="btn" data-act="set_track_room">Track</button>
+            </div>
+
+            <div style="margin-top:16px;">
+              ${!myRoom ? '<p class="mu" style="text-align:center; padding:16px 0;">Please enter your Room Number above to view and track your orders.</p>' :
+                myOrders.length === 0 ? '<p class="mu" style="text-align:center; padding:16px 0;">No active orders found for Room ' + esc(myRoom) + '. Place a food order or request toiletries from the menu!</p>' :
+                myOrders.map(o => `
+                  <div style="background:var(--cream); color:var(--ink); padding:14px; border-radius:14px; margin-bottom:12px; box-shadow:0 3px 0 var(--deep);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px dashed rgba(42,20,11,.2); padding-bottom:6px;">
                       <div>
-                        <b style="font-size:1.1rem; color:var(--oc); display:block;">
-                          ${Number(o.total_price) > 0 ? '₹' + esc(o.total_price) : 'Complimentary'}
-                        </b>
-                        <small class="mu" style="font-size:.78rem;">${timeAgo(o.created_at)}</small>
+                        <b>Order #${esc(o.id || o.order_code)}</b>
+                        <small style="display:block; color:#7a4a35;">Room ${esc(o.room_number)} • ${timeAgo(o.created_at)}</small>
                       </div>
-                    </div>
-                    <div>
                       ${getStatusBadge(o.status)}
+                    </div>
+                    
+                    <div style="font-size:.92rem; margin:8px 0; color:#5d4037;">
+                      ${(o.items || []).map(it => `<div>• <b>${esc(it.n)}</b> x ${it.qty} ${it.p > 0 ? '(₹' + (it.p * it.qty) + ')' : '(Free)'}</div>`).join('')}
+                    </div>
+
+                    ${o.extra_note ? `<div style="background:#fff3e0; color:#e65100; padding:4px 8px; border-radius:6px; font-size:.82rem; margin-bottom:6px;">Note: "${esc(o.extra_note)}"</div>` : ''}
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed #ccc; padding-top:6px; font-weight:700;">
+                      <span style="font-size:1.05rem;">Total: ₹${esc(o.total_price)}</span>
+                      <small style="color:#7a4a35;">${new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                    </div>
+
+                    <div style="display:flex; gap:8px; margin-top:10px;">
+                      <a class="btn sm wa" style="flex:1;" href="${buildOrderWhatsAppMessage(o).url}" target="_blank">📲 WhatsApp Staff</a>
+                      <a class="btn sm sms" style="flex:1;" href="${buildOrderWhatsAppMessage(o).smsUrl}">💬 SMS Staff</a>
                     </div>
                   </div>
                 `).join('')
@@ -1043,7 +1030,7 @@
           </div>
 
           <div style="text-align:center; margin-top:20px;">
-            <button class="btn g" data-act="refresh_orders">🔄 Refresh Board</button>
+            <button class="btn g" data-act="refresh_orders">🔄 Refresh My Status</button>
           </div>
         </div>
       `;
@@ -1827,6 +1814,9 @@
           admin = true;
           login = false;
           adminSubView = 'kitchen';
+          try {
+            sessionStorage.setItem('sh_admin_session', JSON.stringify({ active: true, user: 'staff', time: Date.now() }));
+          } catch(e){}
           render();
         } else {
           $('#lst').textContent = 'Wrong password (try admin123)';
@@ -1835,6 +1825,9 @@
       else if (a === 'logout') {
         admin = false;
         currentView = 'guest';
+        try {
+          sessionStorage.removeItem('sh_admin_session');
+        } catch(e){}
         render();
       }
       else if (a === 'save_all') {
