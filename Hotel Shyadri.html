@@ -306,6 +306,11 @@
       }
     } catch(e){}
 
+    // Fixed Production Supabase Cloud Credentials (Universal across all devices)
+    const SB_URL = "https://uvjqhfvxghtrvogdmzxz.supabase.co";
+    const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2anFoZnZ4Z2h0cnZvZ2Rtenh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4MDY4MTMsImV4cCI6MjEwNzM4MjgxM30.uMQChyviNzD074wWGcBYu77XdKosuJk6sMBMVWBAoa0";
+    S.supabase = { url: SB_URL, key: SB_KEY, connected: true };
+
     // Utilities
     const $ = s => document.querySelector(s);
     const $$ = s => document.querySelectorAll(s);
@@ -317,14 +322,7 @@
     let currentView = 'guest'; // 'guest', 'track'
     let currentTab = 'menu';   // In guest view: 'menu', 'services', 'wifi', 'rules'
     let admin = false, login = false;
-    try {
-      const sess = sessionStorage.getItem('sh_admin_session');
-      if (sess) {
-        const p = JSON.parse(sess);
-        if (p && p.active) admin = true;
-      }
-    } catch(e){}
-    let adminSubView = 'kitchen'; // 'kitchen', 'hotel_dash', 'notices', 'menu_mgmt', 'hotel_info', 'db'
+    let adminSubView = 'kitchen'; // 'kitchen', 'hotel_dash', 'notices', 'menu_mgmt', 'hotel_info'
     let staffDashFilter = 'all';
     let mcat = 0, q = '', vegOnly = false;
     let pendingVerifyOrder = null; // For the alert message: "Check customer is present in the room before accepting the order"
@@ -350,84 +348,33 @@
       if (savedOrders) ordersList = JSON.parse(savedOrders);
     } catch(e){}
 
-    if (!ordersList || !ordersList.length) {
-      ordersList = [
-        {
-          id: 'ORD-101',
-          room_number: '102',
-          guest_name: 'Amit Sharma',
-          guest_phone: '+919811122233',
-          order_type: 'food',
-          items: [{ n: 'Misal Pav', p: 90, qty: 2 }, { n: 'Masala Chai', p: 20, qty: 2 }],
-          extra_note: 'Extra pav please',
-          total_price: 220,
-          status: 'received',
-          created_at: new Date(Date.now() - 15*60000).toISOString()
-        },
-        {
-          id: 'ORD-102',
-          room_number: '204',
-          guest_name: 'Pooja Kulkarni',
-          guest_phone: '+919822233344',
-          order_type: 'toiletries',
-          items: [{ n: 'Fresh Bath Towels', p: 0, qty: 2 }, { n: 'Dental Kit', p: 0, qty: 1 }],
-          extra_note: 'Please bring before 12 PM',
-          total_price: 0,
-          status: 'accepted',
-          created_at: new Date(Date.now() - 35*60000).toISOString()
-        },
-        {
-          id: 'ORD-103',
-          room_number: '305',
-          guest_name: 'Rajesh Deshmukh',
-          guest_phone: '+919833344455',
-          order_type: 'food',
-          items: [{ n: 'Veg Thali', p: 180, qty: 1 }, { n: 'Solkadhi', p: 50, qty: 1 }],
-          extra_note: 'Less spicy food',
-          total_price: 230,
-          status: 'preparing',
-          created_at: new Date(Date.now() - 50*60000).toISOString()
-        }
-      ];
-      try { localStorage.setItem('shyadri_orders', JSON.stringify(ordersList)); }catch(e){}
-    }
-
     // Supabase Client Initialization (Shared Live Feed Across All Devices)
     let sbClient = null;
-    
-    // Resolve Supabase key from code, localStorage, or URL param
-    const urlParams = new URLSearchParams(window.location.search);
-    const paramKey = urlParams.get('sb_key') || urlParams.get('key');
-    if (paramKey) {
-      S.supabase.key = paramKey;
-      try { localStorage.setItem('shyadri_sb_key', paramKey); }catch(e){}
-    } else {
-      const storedKey = localStorage.getItem('shyadri_sb_key');
-      if (storedKey) S.supabase.key = storedKey;
-    }
 
     function initSupabase() {
-      if (window.supabase && S.supabase && S.supabase.url && S.supabase.key) {
+      if (window.supabase) {
         try {
-          sbClient = window.supabase.createClient(S.supabase.url, S.supabase.key);
-          S.supabase.connected = true;
-          fetchSupabaseOrders();
+          sbClient = window.supabase.createClient(SB_URL, SB_KEY);
           subscribeToSupabaseRealtime();
         } catch(err) {
-          console.warn("Supabase live init:", err);
+          console.warn("Supabase SDK init:", err);
         }
       }
+      // Always fetch immediately via native REST API
+      fetchSupabaseOrders();
     }
 
+    // Direct Universal REST Fetch (Works on all mobile, desktop, tablets and browsers)
     async function fetchSupabaseOrders() {
-      if (!sbClient) return;
       try {
-        const { data, error } = await sbClient
-          .from('hotel_orders')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(100);
-        if (!error && data) {
+        const res = await fetch(`${SB_URL}/rest/v1/hotel_orders?select=*&order=created_at.desc&limit=100`, {
+          headers: {
+            'apikey': SB_KEY,
+            'Authorization': 'Bearer ' + SB_KEY
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
           ordersList = data.map(o => ({
             ...o,
             id: o.order_code || o.id,
@@ -436,7 +383,9 @@
           try { localStorage.setItem('shyadri_orders', JSON.stringify(ordersList)); }catch(e){}
           render();
         }
-      } catch(e){}
+      } catch(e) {
+        console.warn("fetchSupabaseOrders error:", e);
+      }
     }
 
     function subscribeToSupabaseRealtime() {
@@ -444,24 +393,11 @@
       try {
         sbClient.channel('hotel_orders_live_feed')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'hotel_orders' }, payload => {
+            fetchSupabaseOrders();
             if (payload.eventType === 'INSERT') {
-              const mapped = { ...payload.new, id: payload.new.order_code || payload.new.id, uuid: payload.new.id };
-              const exists = ordersList.some(o => (o.uuid === mapped.uuid || o.id === mapped.id));
-              if (!exists) {
-                ordersList.unshift(mapped);
-                playHotelChime();
-                toast(`🔔 New Order from Room ${mapped.room_number}!`);
-              }
-            } else if (payload.eventType === 'UPDATE') {
-              const mapped = { ...payload.new, id: payload.new.order_code || payload.new.id, uuid: payload.new.id };
-              const idx = ordersList.findIndex(o => (o.uuid === mapped.uuid || o.id === mapped.id));
-              if (idx !== -1) ordersList[idx] = mapped;
-              else ordersList.unshift(mapped);
-            } else if (payload.eventType === 'DELETE') {
-              ordersList = ordersList.filter(o => (o.uuid !== payload.old.id && o.id !== payload.old.id));
+              playHotelChime();
+              toast(`🔔 New Order from Room ${payload.new.room_number || ''}!`);
             }
-            try { localStorage.setItem('shyadri_orders', JSON.stringify(ordersList)); }catch(e){}
-            render();
           })
           .subscribe();
       } catch(e){}
@@ -666,10 +602,17 @@
       ordersList.unshift(newOrder);
       try { localStorage.setItem('shyadri_orders', JSON.stringify(ordersList)); }catch(e){}
 
-      // 2. Save to Supabase Cloud Database if connected
-      if (sbClient) {
-        try {
-          sbClient.from('hotel_orders').insert([{
+      // 2. Save directly to Supabase Cloud Database (Universal across all devices)
+      try {
+        const res = await fetch(`${SB_URL}/rest/v1/hotel_orders`, {
+          method: 'POST',
+          headers: {
+            'apikey': SB_KEY,
+            'Authorization': 'Bearer ' + SB_KEY,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({
             order_code: newOrder.id,
             room_number: newOrder.room_number,
             guest_name: newOrder.guest_name,
@@ -679,9 +622,18 @@
             extra_note: newOrder.extra_note,
             total_price: newOrder.total_price,
             status: newOrder.status
-          }]).then();
-        } catch(e){}
+          })
+        });
+        if (res.ok) {
+          const inserted = await res.json();
+          if (inserted && inserted[0]) {
+            newOrder.uuid = inserted[0].id;
+          }
+        }
+      } catch(e){
+        console.warn("Direct order insert failed:", e);
       }
+      fetchSupabaseOrders();
 
       // 3. Handle WhatsApp & SMS simultaneous triggers
       const links = buildOrderWhatsAppMessage(newOrder);
@@ -753,20 +705,29 @@
         try { localStorage.setItem('shyadri_orders', JSON.stringify(ordersList)); }catch(e){}
       }
 
-      // Instant Update in Supabase Cloud
-      if (sbClient) {
-        try {
-          const updatePayload = {
-            status: newStatus,
-            accepted_at: newStatus === 'accepted' ? new Date().toISOString() : undefined,
-            completed_at: newStatus === 'delivered' ? new Date().toISOString() : undefined
-          };
-          const matchCol = (target && target.uuid) ? 'id' : 'order_code';
-          const matchVal = (target && target.uuid) ? target.uuid : orderId;
-          sbClient.from('hotel_orders').update(updatePayload).eq(matchCol, matchVal).then(() => {
-            fetchSupabaseOrders();
-          });
-        } catch(e){}
+      // Instant Update in Supabase Cloud (Universal across all devices)
+      try {
+        const updatePayload = {
+          status: newStatus,
+          accepted_at: newStatus === 'accepted' ? new Date().toISOString() : undefined,
+          completed_at: newStatus === 'delivered' ? new Date().toISOString() : undefined
+        };
+        const matchCol = (target && target.uuid) ? 'id' : 'order_code';
+        const matchVal = (target && target.uuid) ? target.uuid : orderId;
+        
+        await fetch(`${SB_URL}/rest/v1/hotel_orders?${matchCol}=eq.${encodeURIComponent(matchVal)}`, {
+          method: 'PATCH',
+          headers: {
+            'apikey': SB_KEY,
+            'Authorization': 'Bearer ' + SB_KEY,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify(updatePayload)
+        });
+        await fetchSupabaseOrders();
+      } catch(e){
+        console.warn("Direct order status update failed:", e);
       }
 
       pendingVerifyOrder = null;
