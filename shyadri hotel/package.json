@@ -1,0 +1,19 @@
+{
+  "name": "hotel-shyadri",
+  "version": "1.0.0",
+  "description": "Hotel Shyadri - Digital Guest Portal, In-Room Ordering, Kitchen & Staff Dashboard with Supabase Realtime",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve ."
+  },
+  "keywords": [
+    "hotel",
+    "guest-portal",
+    "room-service",
+    "supabase",
+    "vercel"
+  ],
+  "author": "Hotel Shyadri",
+  "license": "MIT"
+}
