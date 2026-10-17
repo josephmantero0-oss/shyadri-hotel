@@ -1,0 +1,1809 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hotel Shyadri - Stay · Dine · Relax</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Mukta:wght@400;600;700;800&display=swap">
+  <!-- Supabase JS Client for Realtime Cloud Sync -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style id="css">
+    :root {
+      --ink: #2a140b;
+      --bg: #a63d1c;
+      --deep: #6f240d;
+      --cream: #fff7ea;
+      --cr2: rgba(255, 247, 234, .78);
+      --oc: #f0b23e;
+      --err: #ffd2c2;
+      --ok: #86e0a3;
+      --accent: #2e7d32;
+      --d: 'Yatra One', Georgia, serif;
+      --b: 'Mukta', system-ui, sans-serif;
+      color-scheme: dark;
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    html { scroll-padding-top: env(safe-area-inset-top, 0px); height: 100%; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: radial-gradient(rgba(0, 0, 0, .08) 1.5px, transparent 2px) 0 0/18px 18px,
+                  linear-gradient(#8f3115, #a63d1c 35%, #7f2a10) fixed;
+      color: var(--cream);
+      font: 400 16px/1.5 var(--b);
+      overflow-x: hidden;
+    }
+    .wrap { max-width: 600px; margin: 0 auto; padding: 12px 16px 140px; }
+    .mu { color: var(--cr2); }
+    h1, h2, h3 { font-family: var(--d); margin: 0; font-weight: 400; }
+    h2 { font-size: 1.45rem; color: var(--oc); margin-bottom: 10px; }
+    h3 { font-size: 1.15rem; color: var(--cream); margin: 6px 0; }
+    
+    /* Hero & Parallax */
+    .hero { position: relative; text-align: center; padding: 20px 0 6px; overflow: hidden; margin: 0 -16px; }
+    .mnt { position: absolute; left: -5%; bottom: 0; width: 110%; height: 170px; pointer-events: none; }
+    .mnt path { stroke: var(--cream); stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+    .m1 { fill: #8f3115; transform: translateX(calc(var(--px, 0) * -14px)); }
+    .m2 { fill: #7f2a10; transform: translateX(calc(var(--px, 0) * -28px)); }
+    .m3 { fill: #5f1d09; transform: translateX(calc(var(--px, 0) * -44px)); }
+    .scene { position: relative; height: 230px; perspective: 650px; display: grid; place-items: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .tilt { position: relative; width: 0; height: 0; transform-style: preserve-3d; transform: rotateX(-10deg) rotateY(calc(var(--px, 0) * 16deg)); transition: transform .2s; }
+    .car { position: absolute; transform-style: preserve-3d; animation: spin 16s linear infinite; }
+    .car.fast { animation-duration: 3s; }
+    .dn { position: absolute; left: -22px; top: -35px; width: 44px; height: 70px; transform: rotateY(calc(var(--i) * 36deg)) translateZ(112px); fill: var(--cream); stroke: var(--cream); stroke-linejoin: round; }
+    .sunc { position: absolute; left: -26px; top: -26px; width: 52px; height: 52px; border-radius: 50%; background: radial-gradient(#f0b23e 40%, #ffd77a); box-shadow: 0 0 0 6px rgba(240, 178, 62, .3), 0 0 40px 14px rgba(240, 178, 62, .5); animation: glow 3s ease-in-out infinite alternate; }
+    @keyframes spin { to { transform: rotateY(360deg); } }
+    @keyframes glow { to { box-shadow: 0 0 0 10px rgba(240, 178, 62, .2), 0 0 60px 22px rgba(240, 178, 62, .6); } }
+    @keyframes pop { 0% { transform: scale(.9); } 60% { transform: scale(1.04); } }
+    
+    .namaste { font: 400 1.2rem var(--d); color: var(--oc); margin: 4px 0 0; position: relative; }
+    .hero h1 { font-size: 2.5rem; line-height: 1.1; position: relative; }
+    .sub { margin: 2px 0 0; color: var(--cr2); position: relative; letter-spacing: .12em; text-transform: uppercase; font-size: .8rem; }
+    .say { position: relative; display: inline-block; margin: 10px auto 18px; max-width: 92%; background: var(--cream); color: var(--ink); border-radius: 999px; padding: 7px 18px; font: 600 .95rem var(--b); animation: pop .4s; }
+    .zig { height: 12px; margin: 8px 0; background: linear-gradient(135deg, var(--cream) 25%, transparent 25%) -6px 0, linear-gradient(225deg, var(--cream) 25%, transparent 25%) -6px 0; background-size: 12px 12px; opacity: .9; }
+    
+    /* Cards & Components */
+    .card { background: rgba(42, 20, 11, .28); border: 2px dashed var(--cream); border-radius: 20px; padding: 16px; margin: 18px 0; backdrop-filter: blur(4px); }
+    .note { background: var(--cream); color: var(--ink); border: 0; rotate: -1deg; position: relative; margin-top: 22px; box-shadow: 0 6px 0 var(--deep); }
+    .note::before { content: "📌"; position: absolute; top: -14px; left: 50%; font-size: 1.4rem; }
+    .note small { color: #7a4a35; }
+    
+    /* Navigation Tiles */
+    .qa { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+    .tile { display: grid; justify-items: center; gap: 2px; padding: 12px 6px; background: var(--cream); color: var(--ink); border: 0; border-radius: 18px; font: 400 1rem var(--d); box-shadow: 0 4px 0 var(--deep); cursor: pointer; text-decoration: none; transition: transform .1s, box-shadow .1s; }
+    .tile i { font-style: normal; font-size: 1.7rem; }
+    .tile small { font: 600 .72rem var(--b); color: #7a4a35; }
+    .tile:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--deep); }
+    
+    .kv { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 5px 0; }
+    .kv b { background: var(--cream); color: var(--ink); padding: 2px 10px; border-radius: 8px; font: 800 1.05rem var(--b); word-break: break-all; }
+    
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: var(--oc); color: var(--ink); border: 0; border-radius: 999px; padding: 8px 18px; font: 700 .98rem var(--b); box-shadow: 0 4px 0 var(--deep); text-decoration: none; cursor: pointer; min-height: 42px; transition: transform .1s, box-shadow .1s; }
+    .btn:active { transform: translateY(3px); box-shadow: none; }
+    .btn.g { background: var(--cream); }
+    .btn.d { background: transparent; color: var(--err); box-shadow: none; border: 2px solid var(--err); padding: 5px 12px; min-height: 36px; }
+    .btn.wa { background: #25d366; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.3); box-shadow: 0 4px 0 #1b8a43; }
+    .btn.sms { background: #0088cc; color: #fff; box-shadow: 0 4px 0 #005f8d; }
+    .btn.accept { background: #2e7d32; color: #fff; box-shadow: 0 4px 0 #1b5e20; }
+    .btn.cancel { background: #c62828; color: #fff; box-shadow: 0 4px 0 #8e0000; }
+    .btn.sm { min-height: 32px; padding: 4px 12px; font-size: .88rem; }
+    .btn-full { width: 100%; }
+    
+    /* Pills */
+    .pills { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 8px; scrollbar-width: none; }
+    .pills::-webkit-scrollbar { display: none; }
+    .pills.sticky { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: rgba(111, 36, 13, .97); margin: 0 -8px; padding: 8px 8px; }
+    .pill { flex: none; background: transparent; color: var(--cream); border: 2px solid var(--cream); border-radius: 999px; padding: 5px 14px; font: 600 .9rem var(--b); cursor: pointer; transition: all .2s; }
+    .pill.on { background: var(--cream); color: var(--ink); }
+    
+    /* Menu & Dish items */
+    .tools { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+    .tools input[type=search] { flex: 1; margin: 0; }
+    .sw { display: inline-flex; align-items: center; gap: 6px; color: var(--cream); font-weight: 600; font-size: .88rem; white-space: nowrap; cursor: pointer; }
+    .it { display: flex; gap: 10px; align-items: center; padding: 12px 0; border-top: 1.5px dashed rgba(255, 247, 234, .35); }
+    .it.off { opacity: .5; }
+    .im { flex: 1; }
+    .im b { display: block; font: 400 1.1rem var(--d); }
+    .im small { color: var(--cr2); font-size: .88rem; }
+    .pr { background: var(--oc); color: var(--ink); font: 700 .95rem var(--b); border-radius: 8px; padding: 2px 8px; white-space: nowrap; }
+    .vd { flex: none; width: 15px; height: 15px; border: 2px solid; border-radius: 3px; position: relative; background: var(--cream); box-shadow: 0 0 0 2px var(--cream); }
+    .vd::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; background: currentColor; }
+    .vd.v { color: #1f8a4c; }
+    .vd.n { color: #c0301a; }
+    
+    /* Qty Steppers */
+    .qty-stepper { display: inline-flex; align-items: center; gap: 6px; background: var(--cream); color: var(--ink); border-radius: 999px; padding: 2px 6px; box-shadow: 0 2px 0 var(--deep); }
+    .qty-stepper button { background: none; border: 0; width: 26px; height: 26px; border-radius: 50%; font: 800 1.1rem var(--b); color: var(--ink); cursor: pointer; display: grid; place-items: center; }
+    .qty-stepper button:active { background: rgba(0,0,0,.15); }
+    .qty-stepper span { font: 800 .95rem var(--b); min-width: 18px; text-align: center; }
+    .add-btn { background: var(--cream); color: var(--ink); border: 0; border-radius: 999px; padding: 4px 14px; font: 700 .9rem var(--b); box-shadow: 0 2px 0 var(--deep); cursor: pointer; }
+    .add-btn:active { transform: translateY(2px); }
+    
+    /* Toiletries Grid */
+    .amenities-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .amenity-card { background: rgba(255, 247, 234, .1); border: 1.5px solid rgba(255, 247, 234, .4); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; }
+    .amenity-card i { font-size: 1.8rem; font-style: normal; margin-bottom: 4px; }
+    .amenity-card b { font: 400 1.05rem var(--d); color: var(--cream); }
+    .amenity-card small { color: var(--cr2); font-size: .8rem; margin: 2px 0 8px; }
+    
+    /* Order Board & Status */
+    .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px; font: 700 .8rem var(--b); text-transform: uppercase; letter-spacing: .05em; }
+    .st-received { background: #ffe082; color: #5d4037; }
+    .st-accepted { background: #81d4fa; color: #01579b; }
+    .st-preparing { background: #ffcc80; color: #e65100; }
+    .st-ready { background: #c8e6c9; color: #1b5e20; }
+    .st-delivered { background: #86e0a3; color: #145228; }
+    .st-cancelled { background: #ffcdd2; color: #b71c1c; }
+    
+    /* Form Inputs */
+    input, textarea, select { width: 100%; background: var(--cream); color: var(--ink); border: 0; border-radius: 12px; padding: 10px 14px; font: 600 .98rem var(--b); margin: 5px 0 10px; }
+    input:focus, textarea:focus, select:focus { outline: 3px solid var(--oc); }
+    input[type=checkbox] { width: auto; margin: 0 6px 0 0; accent-color: var(--oc); }
+    label { font: 700 .88rem var(--b); color: var(--cr2); display: block; margin-top: 6px; }
+    .row { border-top: 2px dashed rgba(255, 247, 234, .3); padding: 10px 0; }
+    .bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    
+    /* Header Admin Bar */
+    .adm { position: fixed; top: 0; right: 0; z-index: 10; padding: calc(env(safe-area-inset-top, 0px) + 8px) 10px 0; display: flex; gap: 6px; }
+    .adm button { background: var(--cream); color: var(--ink); border: 0; border-radius: 999px; padding: 4px 12px; font: 600 .85rem var(--b); box-shadow: 0 3px 0 var(--deep); cursor: pointer; }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; display: inline-block; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+
+    /* Modals & Popups */
+    .modal { position: fixed; inset: 0; z-index: 30; background: rgba(20, 8, 3, .78); display: grid; place-items: center; padding: 16px; overflow-y: auto; }
+    .modal .card { width: 100%; max-width: 440px; margin: 0; background: #7f2a10; max-height: 90vh; overflow-y: auto; }
+    .alert-dialog { border: 3px solid #ff9800; background: #5a1906 !important; animation: pop .3s; }
+    
+    /* Bottom Navigation Dock */
+    .dock { position: fixed; left: 50%; translate: -50% 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); z-index: 20; display: flex; gap: 2px; background: var(--cream); border-radius: 999px; padding: 6px 10px; box-shadow: 0 6px 0 var(--deep), 0 14px 30px rgba(0, 0, 0, .45); }
+    .dock button { background: none; border: 0; color: var(--ink); padding: 4px 10px; border-radius: 999px; font: 700 .76rem var(--b); display: grid; justify-items: center; min-width: 54px; cursor: pointer; transition: all .15s; }
+    .dock button.active { background: var(--oc); color: var(--ink); }
+    .dock i { font-style: normal; font-size: 1.25rem; }
+    .dock .badge { position: absolute; top: 2px; right: 10px; background: #e53935; color: #fff; font-size: .68rem; font-weight: 800; padding: 1px 6px; border-radius: 999px; }
+
+    /* Floating Cart Indicator */
+    .cart-bar { position: fixed; left: 50%; translate: -50% 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 72px); z-index: 19; background: var(--oc); color: var(--ink); padding: 10px 18px; border-radius: 999px; font: 800 1rem var(--b); box-shadow: 0 5px 0 var(--deep), 0 10px 25px rgba(0,0,0,.4); display: flex; align-items: center; gap: 12px; cursor: pointer; animation: pop .3s; max-width: 90%; }
+    .cart-bar:active { transform: translateY(3px); }
+    
+    /* Toast & Confetti */
+    .toast { position: fixed; left: 50%; translate: -50% 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 120px); background: var(--cream); color: var(--ink); padding: 9px 20px; border-radius: 999px; font-weight: 800; z-index: 50; box-shadow: 0 6px 20px rgba(0,0,0,.4); animation: pop .25s; text-align: center; }
+    .cf { position: fixed; width: 10px; height: 14px; border-radius: 3px; z-index: 60; pointer-events: none; animation: cf 1s ease-out forwards; }
+    @keyframes cf { to { transform: translate(var(--dx), calc(var(--dy) + 240px)) rotate(var(--r)); opacity: 0; } }
+    
+    .rv { opacity: 0; translate: 0 16px; transition: opacity .4s ease, translate .4s ease; }
+    .rv.in { opacity: 1; translate: 0 0; }
+    .foot { text-align: center; color: var(--cr2); font-size: .88rem; margin-top: 26px; }
+    
+    /* Order Cards in Dashboards */
+    .order-ticket { background: var(--cream); color: var(--ink); border-radius: 16px; padding: 14px; margin-bottom: 12px; box-shadow: 0 4px 0 var(--deep); }
+    .ticket-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1.5px dashed rgba(42, 20, 11, .25); padding-bottom: 8px; margin-bottom: 8px; }
+    .room-tag { background: #8f3115; color: var(--cream); padding: 2px 10px; border-radius: 8px; font: 800 1.15rem var(--b); }
+    .ticket-items { list-style: none; padding: 0; margin: 8px 0; font-size: .95rem; }
+    .ticket-items li { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px dotted rgba(0,0,0,.1); }
+    .ticket-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    
+    /* Live Order Public Item */
+    .public-order-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: rgba(255, 247, 234, .12); border-radius: 12px; margin-bottom: 8px; border-left: 5px solid var(--oc); }
+    
+    /* Tabs & Filters */
+    .dash-tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none; }
+    .dash-tabs button { background: rgba(255, 247, 234, .15); color: var(--cream); border: 0; padding: 6px 14px; border-radius: 10px; font: 700 .9rem var(--b); cursor: pointer; white-space: nowrap; }
+    .dash-tabs button.active { background: var(--oc); color: var(--ink); }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+      .rv { opacity: 1; translate: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- APPLICATION PERSISTENT DATA -->
+  <script id="state" type="application/json">
+  {
+    "hotel": {
+      "name": "Hotel Shyadri",
+      "tagline": "Stay · Dine · Relax",
+      "phone": "+919876543210",
+      "whatsapp": "+919876543210",
+      "location": "Mahabaleshwar - Panchgani Road, Maharashtra"
+    },
+    "supabase": {
+      "url": "https://uvjqhfvxghtrvogdmzxz.supabase.co",
+      "key": "",
+      "connected": false
+    },
+    "wifi": {
+      "name": "Shyadri_Guest",
+      "pass": "welcome123"
+    },
+    "review": "https://www.google.com/search?q=Hotel+Shyadri+reviews",
+    "rules": [
+      "Check-out time is 11:00 AM.",
+      "Quiet hours after 10:00 PM.",
+      "No smoking inside the guest rooms.",
+      "A valid government photo ID is required for every guest.",
+      "Please keep your room key card safe with you."
+    ],
+    "toiletries": [
+      { "id": "t1", "n": "Fresh Bath Towels", "d": "Set of 2 clean sanitized towels", "i": "🛁", "p": 0 },
+      { "id": "t2", "n": "Handcrafted Bath Soap", "d": "Herbal fragrant soap & body wash", "i": "🧼", "p": 0 },
+      { "id": "t3", "n": "Shampoo & Conditioner", "d": "Natural cleansing shampoo pouch", "i": "🧴", "p": 0 },
+      { "id": "t4", "n": "Dental Kit", "d": "Toothbrush & mint toothpaste", "i": "🪥", "p": 0 },
+      { "id": "t5", "n": "Mineral Water (2 Bottles)", "d": "1 Litre sealed mineral water", "i": "💧", "p": 0 },
+      { "id": "t6", "n": "Extra Pillow & Bedsheet", "d": "Clean fluffy pillow and fresh linen", "i": "🛏️", "p": 0 },
+      { "id": "t7", "n": "Toilet Paper & Facial Tissue", "d": "Extra roll and tissue box", "i": "🧻", "p": 0 },
+      { "id": "t8", "n": "Room Slippers", "d": "Pair of disposable comfortable slippers", "i": "🩴", "p": 0 },
+      { "id": "t9", "n": "Mosquito Repellent", "d": "Vaporizer refill or coil for comfort", "i": "🦟", "p": 0 }
+    ],
+    "menu": [
+      {
+        "cat": "Snacks",
+        "items": [
+          { "id": "a1", "n": "Kothimbir Vadi", "p": "100", "d": "Crispy coriander fritters served with green chutney", "v": true, "a": true },
+          { "id": "a2", "n": "Misal Pav", "p": "90", "d": "Spicy sprout curry topped with farsan, served with warm pav", "v": true, "a": true },
+          { "id": "a3", "n": "Chicken Sukka", "p": "240", "d": "Authentic Malvani dry roasted masala chicken", "v": false, "a": true },
+          { "id": "a4", "n": "Batata Vada (2 Pcs)", "p": "60", "d": "Golden spiced potato fritters with garlic thecha", "v": true, "a": true }
+        ]
+      },
+      {
+        "cat": "Meals",
+        "items": [
+          { "id": "b1", "n": "Veg Thali", "p": "180", "d": "Roti/Bhakri, steamed rice, dal, 2 seasonal sabzi, pickle, sweet", "v": true, "a": true },
+          { "id": "b2", "n": "Fish Thali", "p": "320", "d": "Fresh Surmai/Pomfret fry, coconut curry, rice, solkadhi", "v": false, "a": true },
+          { "id": "b3", "n": "Paneer Butter Masala", "p": "240", "d": "Soft paneer cubes in rich tomato cashew gravy", "v": true, "a": true },
+          { "id": "b4", "n": "Mutton Handi (Half)", "p": "360", "d": "Slow cooked village style rustic mutton gravy", "v": false, "a": true },
+          { "id": "b5", "n": "Jowar / Bajra Bhakri (2 Pcs)", "p": "40", "d": "Freshly made hot clay pan bhakri with white butter", "v": true, "a": true }
+        ]
+      },
+      {
+        "cat": "Drinks",
+        "items": [
+          { "id": "c1", "n": "Masala Chai", "p": "20", "d": "Hot ginger-cardamom brewed cutting chai", "v": true, "a": true },
+          { "id": "c2", "n": "Solkadhi", "p": "50", "d": "Traditional kokum and fresh coconut milk digestive cooler", "v": true, "a": true },
+          { "id": "c3", "n": "Kokum Sarbat", "p": "40", "d": "Cooling sweet and tangy organic kokum drink", "v": true, "a": true },
+          { "id": "c4", "n": "Fresh Lime Soda", "p": "45", "d": "Sweet, salted or mixed fizzy cooler", "v": true, "a": true }
+        ]
+      }
+    ],
+    "notices": [
+      { "id": "n1", "t": "स्वागत आहे! Welcome to Hotel Shyadri. Kitchen is open until 10:30 PM.", "time": "Front Desk" }
+    ],
+    "pw": "938013884f0835e38a1b2a32f37be6dc05637518f52592772ce694aaf6d3b2b5"
+  }
+  </script>
+
+  <script id="code">
+    // Load state and setup defaults
+    let S = JSON.parse(document.getElementById('state').textContent);
+    try {
+      const savedConfig = localStorage.getItem('shyadri_config');
+      if (savedConfig) {
+        const parsed = JSON.parse(savedConfig);
+        S = { ...S, ...parsed };
+      }
+    } catch(e){}
+
+    // Utilities
+    const $ = s => document.querySelector(s);
+    const $$ = s => document.querySelectorAll(s);
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const uid = () => Math.random().toString(36).slice(2, 8).toUpperCase();
+    const sha = async s => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))].map(x => x.toString(16).padStart(2, '0')).join('');
+
+    // Navigation and state variables
+    let currentView = 'guest'; // 'guest', 'track', 'kitchen', 'hotel_dash', 'admin'
+    let currentTab = 'menu';   // In guest view: 'menu', 'services', 'wifi', 'rules'
+    let admin = false, login = false, staffDashFilter = 'all';
+    let mcat = 0, q = '', vegOnly = false;
+    let pendingVerifyOrder = null; // For the alert message: "Check customer is present in the room before accepting the order"
+
+    // Cart state
+    let cart = []; // Array of { id, name, price, qty, type, note }
+    let guestRoomNumber = localStorage.getItem('shyadri_room') || '';
+    let guestName = localStorage.getItem('shyadri_guest_name') || '';
+    let guestPhone = localStorage.getItem('shyadri_guest_phone') || '';
+    let guestNote = '';
+    let showCartModal = false;
+    let showSupabaseModal = false;
+
+    // Local in-memory / localStorage order cache
+    let ordersList = [];
+    try {
+      const savedOrders = localStorage.getItem('shyadri_orders');
+      if (savedOrders) ordersList = JSON.parse(savedOrders);
+    } catch(e){}
+
+    if (!ordersList || !ordersList.length) {
+      ordersList = [
+        {
+          id: 'ORD-101',
+          room_number: '102',
+          guest_name: 'Amit Sharma',
+          guest_phone: '+919811122233',
+          order_type: 'food',
+          items: [{ n: 'Misal Pav', p: 90, qty: 2 }, { n: 'Masala Chai', p: 20, qty: 2 }],
+          extra_note: 'Extra pav please',
+          total_price: 220,
+          status: 'received',
+          created_at: new Date(Date.now() - 15*60000).toISOString()
+        },
+        {
+          id: 'ORD-102',
+          room_number: '204',
+          guest_name: 'Pooja Kulkarni',
+          guest_phone: '+919822233344',
+          order_type: 'toiletries',
+          items: [{ n: 'Fresh Bath Towels', p: 0, qty: 2 }, { n: 'Dental Kit', p: 0, qty: 1 }],
+          extra_note: 'Please bring before 12 PM',
+          total_price: 0,
+          status: 'accepted',
+          created_at: new Date(Date.now() - 35*60000).toISOString()
+        },
+        {
+          id: 'ORD-103',
+          room_number: '305',
+          guest_name: 'Rajesh Deshmukh',
+          guest_phone: '+919833344455',
+          order_type: 'food',
+          items: [{ n: 'Veg Thali', p: 180, qty: 1 }, { n: 'Solkadhi', p: 50, qty: 1 }],
+          extra_note: 'Less spicy food',
+          total_price: 230,
+          status: 'preparing',
+          created_at: new Date(Date.now() - 50*60000).toISOString()
+        }
+      ];
+      try { localStorage.setItem('shyadri_orders', JSON.stringify(ordersList)); }catch(e){}
+    }
+
+    // Supabase Client Initialization
+    let sbClient = null;
+    function initSupabase() {
+      if (window.supabase && S.supabase && S.supabase.url && S.supabase.key) {
+        try {
+          sbClient = window.supabase.createClient(S.supabase.url, S.supabase.key);
+          S.supabase.connected = true;
+          fetchSupabaseOrders();
+          subscribeToSupabaseRealtime();
+        } catch(err) {
+          console.warn("Supabase init error:", err);
+          S.supabase.connected = false;
+        }
+      }
+    }
+
+    async function fetchSupabaseOrders() {
+      if (!sbClient) return;
+      try {
+        const { data, error } = await sbClient
+          .from('hotel_orders')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(50);
+        if (!error && data) {
+          ordersList = data;
+          try { localStorage.setItem('shyadri_orders', JSON.stringify(ordersList)); }catch(e){}
+          render();
+        }
+      } catch(e) {
+        console.warn("Error fetching orders from Supabase:", e);
+      }
+    }
+
+    function subscribeToSupabaseRealtime() {
+      if (!sbClient) return;
+      try {
+        sbClient.channel('public:hotel_orders')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'hotel_orders' }, payload => {
+            if (payload.eventType === 'INSERT') {
+              // Add to list and play pleasant alert chime
+              const exists = ordersList.some(o => o.id === payload.new.id);
+              if (!exists) {
+                ordersList.unshift(payload.new);
+                playHotelChime();
+                toast(`🔔 New Order from Room ${payload.new.room_number}!`);
+              }
+            } else if (payload.eventType === 'UPDATE') {
+              const idx = ordersList.findIndex(o => o.id === payload.new.id);
+              if (idx !== -1) ordersList[idx] = payload.new;
+              else ordersList.unshift(payload.new);
+            } else if (payload.eventType === 'DELETE') {
+              ordersList = ordersList.filter(o => o.id !== payload.old.id);
+            }
+            try { localStorage.setItem('shyadri_orders', JSON.stringify(ordersList)); }catch(e){}
+            render();
+          })
+          .subscribe();
+      } catch(e) {
+        console.warn("Supabase Realtime subscription error:", e);
+      }
+    }
+
+    // Web Audio Synthesizer: 2-Tone Hotel Chime
+    function playHotelChime() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+        
+        // Tone 1
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(587.33, now); // D5
+        gain1.gain.setValueAtTime(0.3, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.6);
+
+        // Tone 2
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(880, now + 0.25); // A5
+        gain2.gain.setValueAtTime(0.3, now + 0.25);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.25);
+        osc2.stop(now + 1.1);
+      } catch(e){}
+    }
+
+    // Marathi Greeting Helper
+    const hi = () => {
+      const h = new Date().getHours();
+      return h < 5 || h >= 21 
+        ? ['शुभ रात्री', 'Quiet night in the hills. Ask staff if you need anything.'] 
+        : h < 12 
+        ? ['शुभ प्रभात', 'Good morning! Fresh hot chai & breakfast is ready ☕'] 
+        : h < 17 
+        ? ['शुभ दुपार', 'Good afternoon! Delicious meals ready for in-room dining 🍛'] 
+        : ['शुभ संध्या', 'Good evening! Relax and enjoy the cool Sahyadri breeze 🌄'];
+    };
+
+    // Dancer Animation generator
+    const dancer = i => `<svg class="dn" style="--i:${i}" viewBox="0 0 40 64"><circle cx="20" cy="8" r="6"/><path d="M8 16h24L20 34zM20 34L8 56h24z"/><path d="${i%2?'M8 17L0 27M32 17l8 10':'M8 17L3 5M32 17l5-12'}M14 56l-3 8M26 56l3 8" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`;
+
+    // Format Relative Time
+    function timeAgo(dateString) {
+      const diff = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
+      if (diff < 60) return 'Just now';
+      const mins = Math.floor(diff / 60);
+      if (mins < 60) return `${mins}m ago`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `${hrs}h ago`;
+      return `${Math.floor(hrs / 24)}d ago`;
+    }
+
+    // Status Helper
+    function getStatusBadge(st) {
+      switch(st) {
+        case 'received': return '<span class="status-badge st-received">⏳ Received</span>';
+        case 'accepted': return '<span class="status-badge st-accepted">✓ Accepted</span>';
+        case 'preparing': return '<span class="status-badge st-preparing">👨‍🍳 Preparing</span>';
+        case 'ready': return '<span class="status-badge st-ready">🛎️ Out for Delivery</span>';
+        case 'delivered': return '<span class="status-badge st-delivered">✅ Delivered</span>';
+        case 'cancelled': return '<span class="status-badge st-cancelled">✕ Cancelled</span>';
+        default: return `<span class="status-badge">${esc(st)}</span>`;
+      }
+    }
+
+    // Cart Operations
+    function addToCart(item, type = 'food') {
+      const existing = cart.find(c => c.id === item.id);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        cart.push({
+          id: item.id,
+          name: item.n,
+          price: Number(item.p || 0),
+          qty: 1,
+          type: type,
+          note: ''
+        });
+      }
+      toast(`Added ${item.n} to order`);
+      render();
+    }
+
+    function updateCartQty(id, delta) {
+      const item = cart.find(c => c.id === id);
+      if (item) {
+        item.qty += delta;
+        if (item.qty <= 0) {
+          cart = cart.filter(c => c.id !== id);
+        }
+      }
+      render();
+    }
+
+    function getCartCount() {
+      return cart.reduce((sum, item) => sum + item.qty, 0);
+    }
+
+    function getCartTotal() {
+      return cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    }
+
+    // Build WhatsApp Message Text
+    function buildOrderWhatsAppMessage(order) {
+      const staffNumber = S.hotel.whatsapp || S.hotel.phone || '';
+      const itemsList = order.items.map(it => `• ${it.n} x ${it.qty} ${it.p > 0 ? '(₹' + (it.p * it.qty) + ')' : '(Free)'}`).join('\n');
+      
+      const text = `🏨 *NEW ORDER - ${S.hotel.name.toUpperCase()}*\n` +
+                   `────────────────────\n` +
+                   `🚪 *Room Number:* ${order.room_number}\n` +
+                   `👤 *Guest Name:* ${order.guest_name}\n` +
+                   (order.guest_phone ? `📞 *Phone:* ${order.guest_phone}\n` : '') +
+                   `🆔 *Order ID:* ${order.id}\n` +
+                   `⏰ *Time:* ${new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}\n` +
+                   `────────────────────\n` +
+                   `📋 *ITEMS ORDERED:*\n${itemsList}\n` +
+                   `────────────────────\n` +
+                   `💰 *TOTAL PRICE:* ₹${order.total_price}\n` +
+                   (order.extra_note ? `📝 *SPECIAL NOTE:* ${order.extra_note}\n` : '') +
+                   `────────────────────\n` +
+                   `_Sent via Shyadri Guest Portal_`;
+
+      return {
+        url: `https://wa.me/${staffNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(text)}`,
+        smsUrl: `sms:${staffNumber.replace(/[^0-9+]/g, '')}?body=${encodeURIComponent(text)}`,
+        rawText: text
+      };
+    }
+
+    // Place Order Function (Syncs to Supabase, local cache, and opens WhatsApp/SMS)
+    async function submitOrder(viaWhatsApp = false, viaSMS = false) {
+      const roomInput = $('#order_room');
+      const nameInput = $('#order_name');
+      const phoneInput = $('#order_phone');
+      const noteInput = $('#order_note');
+
+      const room = (roomInput ? roomInput.value : guestRoomNumber).trim();
+      const name = (nameInput ? nameInput.value : guestName).trim();
+      const phone = (phoneInput ? phoneInput.value : guestPhone).trim();
+      const note = (noteInput ? noteInput.value : guestNote).trim();
+
+      if (!room) {
+        alert('Please enter your Room Number (खोली क्रमांक द्या)');
+        if (roomInput) roomInput.focus();
+        return;
+      }
+      if (!name) {
+        alert('Please enter your Name (तुमचे नाव द्या)');
+        if (nameInput) nameInput.focus();
+        return;
+      }
+      if (!cart.length) {
+        alert('Your order is empty! Please add some dishes or amenities.');
+        return;
+      }
+
+      guestRoomNumber = room;
+      guestName = name;
+      guestPhone = phone;
+      localStorage.setItem('shyadri_room', room);
+      localStorage.setItem('shyadri_guest_name', name);
+      localStorage.setItem('shyadri_guest_phone', phone);
+
+      // Determine order type
+      const hasFood = cart.some(i => i.type === 'food');
+      const hasToiletries = cart.some(i => i.type === 'toiletries');
+      const hasCustom = cart.some(i => i.type === 'custom');
+      let orderType = 'food';
+      if (hasFood && (hasToiletries || hasCustom)) orderType = 'mixed';
+      else if (hasToiletries && !hasFood) orderType = 'toiletries';
+      else if (hasCustom && !hasFood && !hasToiletries) orderType = 'custom';
+
+      const newOrder = {
+        id: 'ORD-' + Math.floor(100 + Math.random() * 900),
+        order_code: 'ORD-' + Math.floor(100 + Math.random() * 900),
+        room_number: room,
+        guest_name: name,
+        guest_phone: phone,
+        order_type: orderType,
+        items: cart.map(i => ({ n: i.name, p: i.price, qty: i.qty, type: i.type })),
+        extra_note: note,
+        total_price: getCartTotal(),
+        status: 'received',
+        created_at: new Date().toISOString()
+      };
+
+      // 1. Save to local state
+      ordersList.unshift(newOrder);
+      try { localStorage.setItem('shyadri_orders', JSON.stringify(ordersList)); }catch(e){}
+
+      // 2. Save to Supabase Cloud Database if connected
+      if (sbClient) {
+        try {
+          const { error } = await sbClient.from('hotel_orders').insert([{
+            order_code: newOrder.id,
+            room_number: newOrder.room_number,
+            guest_name: newOrder.guest_name,
+            guest_phone: newOrder.guest_phone,
+            order_type: newOrder.order_type,
+            items: newOrder.items,
+            extra_note: newOrder.extra_note,
+            total_price: newOrder.total_price,
+            status: newOrder.status
+          }]);
+          if (error) console.error("Supabase insert error:", error);
+        } catch(e) {
+          console.error("Supabase request failed:", e);
+        }
+      }
+
+      // 3. Handle WhatsApp & SMS simultaneous triggers
+      const links = buildOrderWhatsAppMessage(newOrder);
+      if (viaWhatsApp) {
+        window.open(links.url, '_blank');
+      } else if (viaSMS) {
+        window.open(links.smsUrl, '_blank');
+      } else {
+        // Auto-prompt WhatsApp sending option to staff
+        setTimeout(() => {
+          if (confirm(`Order placed! Would you also like to send this order directly to staff WhatsApp (${S.hotel.whatsapp || 'Reception'})?`)) {
+            window.open(links.url, '_blank');
+          }
+        }, 400);
+      }
+
+      // Reset cart
+      cart = [];
+      showCartModal = false;
+      playHotelChime();
+      toast('🎉 Order placed successfully!');
+      
+      // Navigate to Track Page so the customer can track their order!
+      currentView = 'track';
+      render();
+    }
+
+    // Add Custom Staff Request directly
+    function addCustomRequest() {
+      const cat = $('#custom_req_cat').value;
+      const text = $('#custom_req_text').value.trim();
+      if (!text) {
+        alert('Please describe what you need (तुमची विनंती येथे लिहा)');
+        return;
+      }
+      addToCart({
+        id: 'cust-' + uid(),
+        n: `${cat}: ${text}`,
+        p: 0,
+        qty: 1
+      }, 'custom');
+      $('#custom_req_text').value = '';
+      showCartModal = true;
+      render();
+    }
+
+    // Update Order Status (With Mandatory Staff Verification Alert)
+    async function promptUpdateOrderStatus(orderId, newStatus) {
+      const order = ordersList.find(o => o.id === orderId);
+      if (!order) return;
+
+      // CRITICAL REQUIREMENT:
+      // "give a alert message in kitchen and hotel dashboard as check customer is present in the room before accepting the order"
+      if (newStatus === 'accepted' || (newStatus === 'preparing' && order.status === 'received')) {
+        pendingVerifyOrder = { orderId, newStatus, order };
+        render();
+        return;
+      }
+
+      await applyOrderStatus(orderId, newStatus);
+    }
+
+    async function applyOrderStatus(orderId, newStatus) {
+      const idx = ordersList.findIndex(o => o.id === orderId);
+      if (idx !== -1) {
+        ordersList[idx].status = newStatus;
+        if (newStatus === 'accepted') ordersList[idx].accepted_at = new Date().toISOString();
+        if (newStatus === 'delivered') ordersList[idx].completed_at = new Date().toISOString();
+        try { localStorage.setItem('shyadri_orders', JSON.stringify(ordersList)); }catch(e){}
+      }
+
+      // Update in Supabase
+      if (sbClient) {
+        try {
+          await sbClient
+            .from('hotel_orders')
+            .update({ 
+              status: newStatus,
+              accepted_at: newStatus === 'accepted' ? new Date().toISOString() : undefined,
+              completed_at: newStatus === 'delivered' ? new Date().toISOString() : undefined
+            })
+            .eq('id', orderId);
+        } catch(e) {
+          console.error("Supabase update error:", e);
+        }
+      }
+
+      pendingVerifyOrder = null;
+      toast(`Order updated to: ${newStatus.toUpperCase()}`);
+      render();
+    }
+
+    // --------------------------------------------------------------------------
+    // UI VIEWS GENERATION
+    // --------------------------------------------------------------------------
+
+    // Guest Food & Drink Menu Block
+    function menuBlock() {
+      const c = S.menu[mcat] || { items: [] };
+      const n = q.toLowerCase();
+      const src = q ? S.menu.flatMap(x => x.items) : c.items;
+      const items = src.filter(it => (!vegOnly || it.v) && (!n || (it.n + ' ' + it.d).toLowerCase().includes(n)))
+        .map(it => {
+          const inCart = cart.find(ci => ci.id === it.id);
+          const stepper = inCart 
+            ? `<div class="qty-stepper">
+                 <button data-act="cart_minus" data-id="${it.id}">−</button>
+                 <span>${inCart.qty}</span>
+                 <button data-act="cart_plus" data-id="${it.id}">+</button>
+               </div>`
+            : `<button class="add-btn" data-act="add_food" data-id="${it.id}" ${it.a ? '' : 'disabled'}>${it.a ? '+ Add' : 'Sold out'}</button>`;
+
+          return `
+            <div class="it ${it.a ? '' : 'off'}">
+              <span class="vd ${it.v ? 'v' : 'n'}"></span>
+              <div class="im">
+                <b>${esc(it.n)}</b>
+                <small>${esc(it.d)}</small>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div class="pr">${it.a ? '₹' + esc(it.p) : 'Sold out'}</div>
+                ${stepper}
+              </div>
+            </div>`;
+        }).join('') || '<p class="mu" style="text-align:center; padding:20px 0">No dishes match your search.</p>';
+
+      return (q ? '' : `
+        <div class="pills sticky">
+          ${S.menu.map((x, i) => `<button class="pill ${i === mcat ? 'on' : ''}" data-act="cat" data-i="${i}">${esc(x.cat)}</button>`).join('')}
+        </div>
+      `) + items;
+    }
+
+    // Toiletries & Amenities Services Block
+    function servicesBlock() {
+      return `
+        <div class="card rv">
+          <h2>🧴 Ask for Toiletries & Amenities</h2>
+          <p class="mu" style="margin-top:-6px; font-size:.9rem;">Delivered directly to your room door free of charge.</p>
+          <div class="amenities-grid">
+            ${S.toiletries.map(t => {
+              const inCart = cart.find(ci => ci.id === t.id);
+              const btn = inCart 
+                ? `<div class="qty-stepper" style="align-self:flex-start">
+                     <button data-act="cart_minus" data-id="${t.id}">−</button>
+                     <span>${inCart.qty}</span>
+                     <button data-act="cart_plus" data-id="${t.id}">+</button>
+                   </div>`
+                : `<button class="btn sm g" data-act="add_toiletries" data-id="${t.id}">+ Request</button>`;
+
+              return `
+                <div class="amenity-card">
+                  <div>
+                    <i>${t.i}</i>
+                    <b>${esc(t.n)}</b>
+                    <small>${esc(t.d)}</small>
+                  </div>
+                  <div style="margin-top:8px;">${btn}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <div class="card rv">
+          <h2>🛎️ Custom Staff Request</h2>
+          <p class="mu" style="margin-top:-6px; font-size:.9rem;">Need an iron, room cleaning, ice bucket, extra key, or custom assistance?</p>
+          <label>Department</label>
+          <select id="custom_req_cat">
+            <option value="Housekeeping">🧹 Housekeeping & Cleaning</option>
+            <option value="Room Service">🍽️ In-Room Dining Service</option>
+            <option value="Front Desk">🛎️ Front Desk / Reception</option>
+            <option value="Maintenance">🔧 Room Maintenance & AC</option>
+            <option value="Luggage & Taxi">🧳 Bell Desk / Taxi Assistance</option>
+          </select>
+          <label>Describe your request</label>
+          <textarea id="custom_req_text" rows="3" placeholder="e.g. Please send an electric kettle, need room cleaning at 3 PM, extra glasses..."></textarea>
+          <button class="btn btn-full" data-act="add_custom_request">+ Add to My Request List</button>
+        </div>
+      `;
+    }
+
+    // Live Track Orders Page (Customer Privacy Guaranteed)
+    function trackView() {
+      const myRoom = guestRoomNumber.trim();
+      const myOrders = myRoom ? ordersList.filter(o => o.room_number.toLowerCase() === myRoom.toLowerCase()) : [];
+
+      return `
+        <div class="wrap">
+          <div class="bar">
+            <h2 style="margin:0">📍 Track Room Orders</h2>
+            <button class="btn sm g" data-act="nav" data-v="guest">← Back to Menu</button>
+          </div>
+
+          <!-- My Room Tracking Box -->
+          <div class="card rv" style="background:#5a1906; border-color:var(--oc);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3 style="color:var(--oc)">My Room Status</h3>
+              <span class="room-tag">${myRoom ? 'Room ' + esc(myRoom) : 'Enter Room #'}</span>
+            </div>
+            
+            <div style="display:flex; gap:8px; margin-top:10px;">
+              <input id="track_room_input" placeholder="Enter room number (e.g. 204)" value="${esc(myRoom)}" style="margin:0; flex:1">
+              <button class="btn" data-act="set_track_room">View</button>
+            </div>
+
+            <div style="margin-top:14px;">
+              ${!myRoom ? '<p class="mu">Enter your room number above to see your order timeline.</p>' :
+                myOrders.length === 0 ? '<p class="mu">No active orders found for Room ' + esc(myRoom) + '. Place an order from the menu!</p>' :
+                myOrders.map(o => `
+                  <div style="background:var(--cream); color:var(--ink); padding:12px; border-radius:12px; margin-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                      <b>Order #${esc(o.id || o.order_code)}</b>
+                      ${getStatusBadge(o.status)}
+                    </div>
+                    <div style="font-size:.9rem; margin:6px 0; color:#5d4037;">
+                      ${(o.items || []).map(it => `• ${esc(it.n)} x ${it.qty}`).join('<br>')}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed #ccc; padding-top:6px; font-weight:700;">
+                      <span>Total: ₹${esc(o.total_price)}</span>
+                      <small style="color:#7a4a35;">${timeAgo(o.created_at)}</small>
+                    </div>
+                    <div style="display:flex; gap:6px; margin-top:8px;">
+                      <a class="btn sm wa" href="${buildOrderWhatsAppMessage(o).url}" target="_blank">📲 WhatsApp Staff</a>
+                      <a class="btn sm sms" href="${buildOrderWhatsAppMessage(o).smsUrl}">💬 SMS Staff</a>
+                    </div>
+                  </div>
+                `).join('')
+              }
+            </div>
+          </div>
+
+          <!-- All Rooms Public Live Board -->
+          <div class="card rv">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <h2>🏨 Live Hotel Order Board</h2>
+              <span class="mu" style="font-size:.8rem;"><span class="live-dot"></span> Live</span>
+            </div>
+            <p class="mu" style="font-size:.82rem; margin-top:-4px; line-height:1.3;">
+              🛡️ <i>Guest Privacy Notice:</i> To protect your security, only the <b>Room Number</b> and <b>Order Price</b> are displayed on this public board.
+            </p>
+
+            <div style="margin-top:14px;">
+              ${ordersList.length === 0 ? '<p class="mu">No orders in queue.</p>' :
+                ordersList.map(o => `
+                  <div class="public-order-row">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                      <span class="room-tag">Room ${esc(o.room_number)}</span>
+                      <div>
+                        <b style="font-size:1.1rem; color:var(--oc); display:block;">
+                          ${Number(o.total_price) > 0 ? '₹' + esc(o.total_price) : 'Complimentary'}
+                        </b>
+                        <small class="mu" style="font-size:.78rem;">${timeAgo(o.created_at)}</small>
+                      </div>
+                    </div>
+                    <div>
+                      ${getStatusBadge(o.status)}
+                    </div>
+                  </div>
+                `).join('')
+              }
+            </div>
+          </div>
+
+          <div style="text-align:center; margin-top:20px;">
+            <button class="btn g" data-act="refresh_orders">🔄 Refresh Board</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Kitchen Dashboard (Food & Beverages)
+    function kitchenView() {
+      const kitchenOrders = ordersList.filter(o => o.order_type === 'food' || o.order_type === 'mixed' || (o.items && o.items.some(i => i.type === 'food')));
+      const activeCount = kitchenOrders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length;
+
+      return `
+        <div class="wrap">
+          <div class="bar">
+            <div>
+              <h2 style="margin:0">👨‍🍳 Kitchen Dashboard</h2>
+              <small class="mu">Active Orders: <b>${activeCount}</b> | Auto-refreshing</small>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn sm g" data-act="nav" data-v="hotel_dash">Hotel Dash</button>
+              <button class="btn sm g" data-act="nav" data-v="guest">Guest View</button>
+            </div>
+          </div>
+
+          <div class="zig"></div>
+
+          ${kitchenOrders.length === 0 ? '<div class="card"><p class="mu" style="text-align:center">No active kitchen orders.</p></div>' :
+            kitchenOrders.map(o => {
+              const isAccepted = o.status !== 'received';
+              return `
+                <div class="order-ticket">
+                  <div class="ticket-head">
+                    <div>
+                      <span class="room-tag">ROOM ${esc(o.room_number)}</span>
+                      <b style="margin-left:8px; font-size:1.05rem;">${esc(o.guest_name)}</b>
+                    </div>
+                    <div>
+                      ${getStatusBadge(o.status)}
+                    </div>
+                  </div>
+
+                  <ul class="ticket-items">
+                    ${(o.items || []).map(it => `
+                      <li>
+                        <b>${esc(it.n)}</b>
+                        <span>x ${it.qty} (₹${(Number(it.p||0)*it.qty)})</span>
+                      </li>
+                    `).join('')}
+                  </ul>
+
+                  ${o.extra_note ? `
+                    <div style="background:#fff3e0; color:#e65100; padding:6px 10px; border-radius:8px; font-size:.88rem; margin:6px 0; font-weight:700;">
+                      🍳 Cooking Note: "${esc(o.extra_note)}"
+                    </div>
+                  ` : ''}
+
+                  <div style="display:flex; justify-content:space-between; align-items:center; border-top:1.5px dashed rgba(42,20,11,.2); padding-top:6px;">
+                    <b>Total: ₹${esc(o.total_price)}</b>
+                    <small style="color:#7a4a35;">Ordered: ${timeAgo(o.created_at)}</small>
+                  </div>
+
+                  <div class="ticket-actions">
+                    ${o.status === 'received' ? `
+                      <button class="btn sm accept" data-act="verify_accept" data-id="${o.id}">✓ Accept Order</button>
+                    ` : ''}
+                    ${o.status === 'accepted' ? `
+                      <button class="btn sm" data-act="set_status" data-id="${o.id}" data-st="preparing">👨‍🍳 Start Preparing</button>
+                    ` : ''}
+                    ${o.status === 'preparing' ? `
+                      <button class="btn sm accept" data-act="set_status" data-id="${o.id}" data-st="ready">🛎️ Ready for Delivery</button>
+                    ` : ''}
+                    ${o.status === 'ready' ? `
+                      <button class="btn sm accept" data-act="set_status" data-id="${o.id}" data-st="delivered">✅ Delivered to Room</button>
+                    ` : ''}
+                    ${o.status !== 'delivered' && o.status !== 'cancelled' ? `
+                      <button class="btn sm d" data-act="set_status" data-id="${o.id}" data-st="cancelled">✕ Cancel</button>
+                    ` : ''}
+                  </div>
+                </div>
+              `;
+            }).join('')
+          }
+        </div>
+      `;
+    }
+
+    // Hotel Staff & Front Desk Dashboard
+    function hotelDashView() {
+      let filtered = ordersList;
+      if (staffDashFilter === 'pending') filtered = ordersList.filter(o => o.status === 'received' || o.status === 'accepted');
+      else if (staffDashFilter === 'food') filtered = ordersList.filter(o => o.order_type === 'food' || o.order_type === 'mixed');
+      else if (staffDashFilter === 'toiletries') filtered = ordersList.filter(o => o.order_type === 'toiletries');
+      else if (staffDashFilter === 'custom') filtered = ordersList.filter(o => o.order_type === 'custom');
+      else if (staffDashFilter === 'completed') filtered = ordersList.filter(o => o.status === 'delivered');
+
+      return `
+        <div class="wrap">
+          <div class="bar">
+            <div>
+              <h2 style="margin:0">🏨 Hotel Staff Dashboard</h2>
+              <small class="mu">Front Desk & Room Service Manager</small>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn sm g" data-act="nav" data-v="kitchen">Kitchen Dash</button>
+              <button class="btn sm g" data-act="nav" data-v="guest">Guest View</button>
+            </div>
+          </div>
+
+          <!-- Filter Tabs -->
+          <div class="dash-tabs">
+            <button class="${staffDashFilter === 'all' ? 'active' : ''}" data-act="s_filter" data-f="all">All (${ordersList.length})</button>
+            <button class="${staffDashFilter === 'pending' ? 'active' : ''}" data-act="s_filter" data-f="pending">⏳ Pending</button>
+            <button class="${staffDashFilter === 'food' ? 'active' : ''}" data-act="s_filter" data-f="food">🍛 Food</button>
+            <button class="${staffDashFilter === 'toiletries' ? 'active' : ''}" data-act="s_filter" data-f="toiletries">🧴 Toiletries</button>
+            <button class="${staffDashFilter === 'custom' ? 'active' : ''}" data-act="s_filter" data-f="custom">🛎️ Custom</button>
+            <button class="${staffDashFilter === 'completed' ? 'active' : ''}" data-act="s_filter" data-f="completed">✅ Delivered</button>
+          </div>
+
+          ${filtered.length === 0 ? '<div class="card"><p class="mu" style="text-align:center">No requests match this filter.</p></div>' :
+            filtered.map(o => `
+              <div class="order-ticket">
+                <div class="ticket-head">
+                  <div>
+                    <span class="room-tag">ROOM ${esc(o.room_number)}</span>
+                    <b style="margin-left:8px; font-size:1.05rem;">${esc(o.guest_name)}</b>
+                    ${o.guest_phone ? `<span style="font-size:.85rem; color:#7a4a35;">(${esc(o.guest_phone)})</span>` : ''}
+                  </div>
+                  <div>
+                    ${getStatusBadge(o.status)}
+                  </div>
+                </div>
+
+                <ul class="ticket-items">
+                  ${(o.items || []).map(it => `
+                    <li>
+                      <b>${esc(it.n)}</b>
+                      <span>x ${it.qty} ${it.p > 0 ? '(₹' + (it.p * it.qty) + ')' : '(Complimentary)'}</span>
+                    </li>
+                  `).join('')}
+                </ul>
+
+                ${o.extra_note ? `
+                  <div style="background:#fff3e0; color:#e65100; padding:6px 10px; border-radius:8px; font-size:.88rem; margin:6px 0; font-weight:700;">
+                    📝 Note: "${esc(o.extra_note)}"
+                  </div>
+                ` : ''}
+
+                <div style="display:flex; justify-content:space-between; align-items:center; border-top:1.5px dashed rgba(42,20,11,.2); padding-top:6px;">
+                  <b>Total: ₹${esc(o.total_price)}</b>
+                  <small style="color:#7a4a35;">Time: ${timeAgo(o.created_at)}</small>
+                </div>
+
+                <div class="ticket-actions">
+                  ${o.status === 'received' ? `
+                    <button class="btn sm accept" data-act="verify_accept" data-id="${o.id}">✓ Accept Request</button>
+                  ` : ''}
+                  ${o.status === 'accepted' ? `
+                    <button class="btn sm" data-act="set_status" data-id="${o.id}" data-st="ready">🛎️ Out for Delivery</button>
+                  ` : ''}
+                  ${o.status === 'ready' || o.status === 'preparing' ? `
+                    <button class="btn sm accept" data-act="set_status" data-id="${o.id}" data-st="delivered">✅ Delivered to Room</button>
+                  ` : ''}
+                  ${o.guest_phone ? `
+                    <a class="btn sm wa" href="https://wa.me/${o.guest_phone.replace(/[^0-9]/g, '')}" target="_blank">📲 WhatsApp Guest</a>
+                    <a class="btn sm g" href="tel:${o.guest_phone}">📞 Call Guest</a>
+                  ` : ''}
+                  ${o.status !== 'delivered' && o.status !== 'cancelled' ? `
+                    <button class="btn sm d" data-act="set_status" data-id="${o.id}" data-st="cancelled">✕ Cancel</button>
+                  ` : ''}
+                </div>
+              </div>
+            `).join('')
+          }
+        </div>
+      `;
+    }
+
+    // Guest Landing View
+    function guestView() {
+      const H = hi();
+      const nt = S.notices.slice().reverse().map(n => `
+        <div class="card note rv">
+          <b>From the front desk</b>
+          <p style="margin:4px 0">${esc(n.t)}</p>
+          <small>${esc(n.time)}</small>
+        </div>
+      `).join('');
+
+      return `
+        <!-- Top Admin Bar -->
+        <div class="adm">
+          <button data-act="nav" data-v="kitchen">👨‍🍳 Kitchen</button>
+          <button data-act="nav" data-v="hotel_dash">🏨 Staff</button>
+          <button data-act="login">⚙️ Admin</button>
+        </div>
+
+        <div class="wrap">
+          <!-- Hero Section -->
+          <header class="hero" id="hero">
+            <svg class="mnt" viewBox="0 0 420 170" preserveAspectRatio="none">
+              <path class="m3" d="M0 170V70l45-35 40 40 50-55 55 60 40-30 60 50 45-35 85 55v70z"/>
+              <path class="m2" d="M0 170V105l60-40 45 40 70-50 70 60 60-40 115 50v45z"/>
+              <path class="m1" d="M0 170v-35l70-40 55 35 65-30 80 45 60-35 90 45v15z"/>
+            </svg>
+            <div class="scene" data-act="owl">
+              <div class="tilt">
+                <div class="sunc"></div>
+                <div class="car" id="car">${Array.from({length: 10}, (_, i) => dancer(i)).join('')}</div>
+              </div>
+            </div>
+            <p class="namaste">${H[0]}</p>
+            <h1>${esc(S.hotel.name)}</h1>
+            <p class="sub">${esc(S.hotel.tagline)}</p>
+            <p class="say" id="say">${esc(H[1])}</p>
+          </header>
+
+          <div class="zig"></div>
+
+          ${nt}
+
+          <!-- Quick Navigation Tiles -->
+          <nav class="qa rv">
+            <button class="tile" data-act="sub_tab" data-tab="menu"><i>🍛</i>Menu<small>जेवण मागवा</small></button>
+            <button class="tile" data-act="sub_tab" data-tab="services"><i>🧴</i>Toiletries<small>सामग्री / मदत</small></button>
+            <button class="tile" data-act="nav" data-v="track"><i>📍</i>Track Order<small>ऑर्डर ट्रॅक</small></button>
+            <button class="tile" data-act="sub_tab" data-tab="wifi"><i>📶</i>WiFi<small>वायफाय</small></button>
+            <button class="tile" data-act="sub_tab" data-tab="rules"><i>📜</i>Rules<small>नियम</small></button>
+            <a class="tile" href="tel:${esc(S.hotel.phone)}"><i>📞</i>Call Staff<small>संपर्क</small></a>
+          </nav>
+
+          <!-- Food & Drinks Menu Section -->
+          <section class="card rv" id="menu-section" style="${currentTab === 'menu' ? '' : 'display:none;'}">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h2>🍛 Food & Drinks Menu</h2>
+              <button class="btn sm g" data-act="pick">आज काय खायचं? 🎲</button>
+            </div>
+            <div id="pick"></div>
+            <div class="tools">
+              <input id="q" type="search" placeholder="Search dishes…" value="${esc(q)}">
+              <label class="sw"><input type="checkbox" id="vg" ${vegOnly ? 'checked' : ''}>Veg only</label>
+            </div>
+            <div id="mm">${menuBlock()}</div>
+          </section>
+
+          <!-- Toiletries & Custom Requests Section -->
+          <section id="services-section" style="${currentTab === 'services' ? '' : 'display:none;'}">
+            ${servicesBlock()}
+          </section>
+
+          <!-- WiFi Section -->
+          <section class="card rv" id="wifi-section" style="${currentTab === 'wifi' ? '' : 'display:none;'}">
+            <h2>📶 Hotel High-Speed WiFi</h2>
+            <div class="kv"><span class="mu">Network Name</span><b>${esc(S.wifi.name)}</b></div>
+            <div class="kv"><span class="mu">Password</span><b>${esc(S.wifi.pass)}</b></div>
+            <div class="bar" style="margin:12px 0 0">
+              <button class="btn" data-act="copy" data-v="${esc(S.wifi.pass)}">Copy Password</button>
+              <button class="btn g" data-act="copy" data-v="${esc(S.wifi.name)}">Copy Name</button>
+            </div>
+          </section>
+
+          <!-- Rules Section -->
+          <section class="card rv" id="rules-section" style="${currentTab === 'rules' ? '' : 'display:none;'}">
+            <h2>📜 House Rules & Policies</h2>
+            <ol>${S.rules.map(r => `<li>${esc(r)}</li>`).join('')}</ol>
+          </section>
+
+          ${S.review ? `
+            <section class="card rv">
+              <h2>Enjoyed your stay? 🧡</h2>
+              <p style="margin-top:0">Your Google review helps our mountain lodge grow!</p>
+              <a class="btn" href="${esc(S.review)}" target="_blank" rel="noopener">⭐ Leave a Review on Google</a>
+            </section>
+          ` : ''}
+
+          <div class="zig"></div>
+          <p class="foot">धन्यवाद! Thank you for staying with ${esc(S.hotel.name)}</p>
+        </div>
+
+        <!-- Floating Cart Bar (Appears when items are in cart) -->
+        ${cart.length > 0 ? `
+          <div class="cart-bar" data-act="open_cart">
+            <span>🛒 <b>${getCartCount()} items</b> in order</span>
+            <span style="border-left:1px solid rgba(0,0,0,.2); padding-left:10px;">₹${getCartTotal()}</span>
+            <span style="margin-left:auto; font-size:.9rem; text-decoration:underline;">View Order →</span>
+          </div>
+        ` : ''}
+
+        <!-- Bottom Navigation Dock -->
+        <nav class="dock">
+          <button class="${currentTab === 'menu' && currentView === 'guest' ? 'active' : ''}" data-act="sub_tab" data-tab="menu"><i>🍛</i>Menu</button>
+          <button class="${currentTab === 'services' && currentView === 'guest' ? 'active' : ''}" data-act="sub_tab" data-tab="services"><i>🧴</i>Toiletries</button>
+          <button class="${currentView === 'track' ? 'active' : ''}" data-act="nav" data-v="track">
+            <i>📍</i>Track
+            ${ordersList.length > 0 ? `<span class="badge">${ordersList.length}</span>` : ''}
+          </button>
+          <button class="${currentTab === 'wifi' && currentView === 'guest' ? 'active' : ''}" data-act="sub_tab" data-tab="wifi"><i>📶</i>WiFi</button>
+          <button class="${currentTab === 'rules' && currentView === 'guest' ? 'active' : ''}" data-act="sub_tab" data-tab="rules"><i>📜</i>Rules</button>
+        </nav>
+      `;
+    }
+
+    // Checkout & Cart Modal
+    function cartModalView() {
+      if (!showCartModal) return '';
+      return `
+        <div class="modal">
+          <div class="card" style="position:relative;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px dashed rgba(255,247,234,.35); padding-bottom:8px;">
+              <h2 style="margin:0">🛒 Your Room Order</h2>
+              <button class="btn sm g" data-act="close_cart" style="padding:2px 10px;">✕</button>
+            </div>
+
+            <div style="max-height:220px; overflow-y:auto; margin:12px 0;">
+              ${cart.length === 0 ? '<p class="mu">Your cart is empty.</p>' :
+                cart.map(it => `
+                  <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px dotted rgba(255,247,234,.2);">
+                    <div style="flex:1;">
+                      <b>${esc(it.name)}</b>
+                      <div class="mu" style="font-size:.8rem;">${it.price > 0 ? '₹' + it.price + ' each' : 'Complimentary'}</div>
+                    </div>
+                    <div class="qty-stepper">
+                      <button data-act="cart_minus" data-id="${it.id}">−</button>
+                      <span>${it.qty}</span>
+                      <button data-act="cart_plus" data-id="${it.id}">+</button>
+                    </div>
+                  </div>
+                `).join('')
+              }
+            </div>
+
+            <div style="display:flex; justify-content:space-between; font-weight:800; font-size:1.15rem; color:var(--oc); margin:10px 0;">
+              <span>Total Price:</span>
+              <span>₹${getCartTotal()}</span>
+            </div>
+
+            <!-- MANDATORY GUEST DETAILS FORM -->
+            <div style="background:rgba(0,0,0,.2); padding:10px; border-radius:12px; margin-top:10px;">
+              <label>🚪 Room Number (Required) *</label>
+              <input id="order_room" type="text" placeholder="e.g. 104, 202, 301" value="${esc(guestRoomNumber)}" required autofocus>
+
+              <label>👤 Guest Name (Required) *</label>
+              <input id="order_name" type="text" placeholder="e.g. Rahul Patil" value="${esc(guestName)}" required>
+
+              <label>📞 Mobile / WhatsApp Number (For updates)</label>
+              <input id="order_phone" type="tel" placeholder="e.g. 9876543210" value="${esc(guestPhone)}">
+
+              <label>📝 Extra Note / Special Instructions</label>
+              <textarea id="order_note" rows="2" placeholder="e.g. Less spicy, deliver after 8:30 PM, knock gently"></textarea>
+            </div>
+
+            <!-- SUBMIT & SEND BUTTONS -->
+            <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px;">
+              <button class="btn btn-full" data-act="do_submit_order">🛎️ Place Order to Hotel System</button>
+              <div style="display:flex; gap:8px;">
+                <button class="btn wa" style="flex:1;" data-act="do_submit_order_wa">📲 Order via WhatsApp</button>
+                <button class="btn sms" style="flex:1;" data-act="do_submit_order_sms">💬 Order via SMS</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // MANDATORY REQUIREMENT: Verification Alert before accepting
+    // "give a alert message in kitchen and hotel dashboard as check customer is present in the room before accepting the order"
+    function verificationAlertModalView() {
+      if (!pendingVerifyOrder) return '';
+      const o = pendingVerifyOrder.order;
+      return `
+        <div class="modal">
+          <div class="card alert-dialog" style="max-width:420px; text-align:center;">
+            <div style="font-size:3rem; margin-bottom:4px;">⚠️</div>
+            <h2 style="color:#ffcc80; margin-bottom:6px;">VERIFICATION REQUIRED</h2>
+            <div style="background:#fff3e0; color:#5d4037; padding:12px; border-radius:12px; margin:10px 0; font-size:1.05rem; font-weight:800; border:2px dashed #ff9800;">
+              Check customer is present in the room before accepting the order!
+            </div>
+            <p style="font-size:.9rem; color:var(--cream); margin:6px 0;">
+              कृपया खात्री करा की पाहुणे खोलीत हजर आहेत.
+            </p>
+            <div style="background:rgba(0,0,0,.3); padding:8px; border-radius:8px; margin:10px 0; text-align:left; font-size:.92rem;">
+              <div>🚪 <b>Room:</b> ${esc(o.room_number)}</div>
+              <div>👤 <b>Guest:</b> ${esc(o.guest_name)}</div>
+              <div>💰 <b>Total:</b> ₹${esc(o.total_price)}</div>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:14px;">
+              <button class="btn g" style="flex:1;" data-act="cancel_verify">Re-check / Cancel</button>
+              <button class="btn accept" style="flex:1.4;" data-act="confirm_verify">✓ Yes, Customer Present - Accept</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Supabase Setup & Cloud Sync Modal
+    function supabaseModalView() {
+      if (!showSupabaseModal) return '';
+      return `
+        <div class="modal">
+          <div class="card">
+            <h2>⚡ Connect to Supabase</h2>
+            <p class="mu" style="font-size:.85rem;">
+              Connect your free Supabase project to enable live cloud real-time order sync across all customer phones, the kitchen tablet, and the hotel front desk!
+            </p>
+            <label>Supabase Project URL</label>
+            <input id="sb_url" placeholder="https://xyzcompany.supabase.co" value="${esc(S.supabase ? S.supabase.url : '')}">
+            <label>Supabase Anon Public Key</label>
+            <input id="sb_key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." value="${esc(S.supabase ? S.supabase.key : '')}">
+            
+            <div style="background:rgba(255,247,234,.1); padding:10px; border-radius:10px; font-size:.82rem; margin:10px 0;">
+              💡 <b>Tip:</b> Run the SQL script from <code>supabase_schema.sql</code> in your Supabase SQL Editor to initialize the database tables with 1 click.
+            </div>
+
+            <div class="bar">
+              <button class="btn g" data-act="close_sb_modal">Cancel</button>
+              <button class="btn" data-act="save_sb_config">Save & Connect</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Admin & Settings View
+    function adminView() {
+      let b = '';
+      if (currentTab === 'notices') {
+        b = `
+          <div class="card">
+            <h2>Broadcast a Notice</h2>
+            <textarea id="nt" rows="3" placeholder="Message for all guests, e.g. Dinner served until 10:30 PM."></textarea>
+            <button class="btn" data-act="addnotice">Broadcast Now</button>
+          </div>
+          <div class="card">
+            <h2>Live Notices</h2>
+            ${S.notices.map((n, i) => `
+              <div class="row">
+                <p style="margin:0 0 6px">${esc(n.t)}</p>
+                <small class="mu">${esc(n.time)}</small>
+                <button class="btn d" data-act="delnotice" data-i="${i}">Remove Notice</button>
+              </div>
+            `).join('') || '<p class="mu">No active notices.</p>'}
+          </div>
+        `;
+      } else if (currentTab === 'supabase') {
+        b = `
+          <div class="card">
+            <h2>⚡ Supabase Cloud & Vercel Sync</h2>
+            <p class="mu" style="font-size:.88rem;">Real-time sync status: <b>${S.supabase && S.supabase.connected ? '🟢 Connected' : '⚪ Running on Local Cache'}</b></p>
+            <label>Supabase Project URL</label>
+            <input id="cfg_sb_url" value="${esc(S.supabase ? S.supabase.url : '')}" placeholder="https://your-project.supabase.co">
+            <label>Supabase Anon Public Key</label>
+            <input id="cfg_sb_key" value="${esc(S.supabase ? S.supabase.key : '')}" placeholder="eyJhbGciOiJIUzI1Ni...">
+            <div class="bar" style="margin-top:12px;">
+              <button class="btn" data-act="save_sb_settings">Save Cloud Settings</button>
+              <button class="btn g" data-act="test_sb">Test Sync</button>
+            </div>
+          </div>
+        `;
+      } else if (currentTab === 'menu_mgmt') {
+        const c = S.menu[mcat];
+        b = `
+          <div class="card">
+            <div class="pills">
+              ${S.menu.map((x, i) => `<button class="pill ${i === mcat ? 'on' : ''}" data-act="acat" data-i="${i}">${esc(x.cat)}</button>`).join('')}
+              <button class="pill" data-act="addcat">+ Category</button>
+            </div>
+            ${c ? `
+              <label>Category Name</label>
+              <input value="${esc(c.cat)}" data-k="menu.${mcat}.cat">
+              ${c.items.map((it, j) => {
+                const p = `menu.${mcat}.items.${j}.`;
+                return `
+                  <div class="row">
+                    <input value="${esc(it.n)}" data-k="${p}n" placeholder="Dish name">
+                    <input value="${esc(it.p)}" data-k="${p}p" placeholder="Price ₹">
+                    <input value="${esc(it.d)}" data-k="${p}d" placeholder="Description">
+                    <label><input type="checkbox" data-k="${p}v" ${it.v ? 'checked' : ''}>Veg</label>
+                    <label><input type="checkbox" data-k="${p}a" ${it.a ? 'checked' : ''}>Available</label>
+                    <button class="btn d" data-act="delitem" data-j="${j}">Delete</button>
+                  </div>
+                `;
+              }).join('')}
+              <div class="bar" style="margin-top:12px;">
+                <button class="btn g" data-act="additem">+ Add Dish</button>
+                <button class="btn d" data-act="delcat">Delete Category</button>
+              </div>
+            ` : '<p class="mu">No items.</p>'}
+          </div>
+        `;
+      } else if (currentTab === 'hotel_info') {
+        b = `
+          <div class="card">
+            <h2>Hotel Contact & WhatsApp</h2>
+            <label>Hotel Name</label>
+            <input value="${esc(S.hotel.name)}" data-k="hotel.name">
+            <label>Tagline</label>
+            <input value="${esc(S.hotel.tagline)}" data-k="hotel.tagline">
+            <label>Staff WhatsApp Number (for instant orders)</label>
+            <input value="${esc(S.hotel.whatsapp)}" data-k="hotel.whatsapp" placeholder="+919876543210">
+            <label>Reception Phone Number</label>
+            <input value="${esc(S.hotel.phone)}" data-k="hotel.phone" placeholder="+919876543210">
+            <label>WiFi Network Name</label>
+            <input value="${esc(S.wifi.name)}" data-k="wifi.name">
+            <label>WiFi Password</label>
+            <input value="${esc(S.wifi.pass)}" data-k="wifi.pass">
+            <label>Google Review URL</label>
+            <input value="${esc(S.review)}" data-k="review">
+          </div>
+          <div class="card">
+            <h2>House Rules</h2>
+            ${S.rules.map((r, i) => `
+              <div class="row">
+                <input value="${esc(r)}" data-k="rules.${i}">
+                <button class="btn d" data-act="delrule" data-i="${i}">Delete</button>
+              </div>
+            `).join('')}
+            <button class="btn g" data-act="addrule">+ Add Rule</button>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="wrap">
+          <div class="bar">
+            <h2 style="margin:0">⚙️ Hotel Administration</h2>
+            <div>
+              <button class="btn g" data-act="logout">Exit Admin</button>
+              <button class="btn" data-act="save_all">Save Changes</button>
+            </div>
+          </div>
+          <div class="pills">
+            <button class="pill ${currentTab === 'notices' ? 'on' : ''}" data-act="atab" data-t="notices">Notices</button>
+            <button class="pill ${currentTab === 'menu_mgmt' ? 'on' : ''}" data-act="atab" data-t="menu_mgmt">Menu Manager</button>
+            <button class="pill ${currentTab === 'hotel_info' ? 'on' : ''}" data-act="atab" data-t="hotel_info">Info & WhatsApp</button>
+            <button class="pill ${currentTab === 'supabase' ? 'on' : ''}" data-act="atab" data-t="supabase">⚡ Supabase</button>
+          </div>
+          ${b}
+        </div>
+      `;
+    }
+
+    // Main Render Function
+    function render() {
+      let mainHtml = '';
+      if (admin) {
+        mainHtml = adminView();
+      } else if (currentView === 'kitchen') {
+        mainHtml = kitchenView();
+      } else if (currentView === 'hotel_dash') {
+        mainHtml = hotelDashView();
+      } else if (currentView === 'track') {
+        mainHtml = trackView();
+      } else {
+        mainHtml = guestView();
+      }
+
+      // Append Modals
+      mainHtml += cartModalView();
+      mainHtml += verificationAlertModalView();
+      mainHtml += supabaseModalView();
+
+      if (login) {
+        mainHtml += `
+          <div class="modal">
+            <div class="card">
+              <h2>Staff / Admin Login</h2>
+              <input id="pw" type="password" placeholder="Password (default: admin123)" autocomplete="current-password">
+              <div class="st" id="lst" style="color:var(--err); min-height:1.2em; font-weight:700;"></div>
+              <div class="bar">
+                <button class="btn g" data-act="closelogin">Cancel</button>
+                <button class="btn" data-act="dologin">Unlock</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      $('#app').innerHTML = mainHtml;
+      reveal();
+      const p = $('#pw');
+      if (p) p.focus();
+    }
+
+    // Scroll reveal observer
+    function reveal() {
+      const e = document.querySelectorAll('.rv');
+      if (!('IntersectionObserver' in window)) return e.forEach(x => x.classList.add('in'));
+      const o = new IntersectionObserver(r => r.forEach(x => {
+        if (x.isIntersecting) {
+          x.target.classList.add('in');
+          o.unobserve(x.target);
+        }
+      }), { threshold: .08 });
+      e.forEach(x => o.observe(x));
+    }
+
+    // Toast alert helper
+    function toast(m) {
+      const d = document.createElement('div');
+      d.className = 'toast';
+      d.textContent = m;
+      document.body.appendChild(d);
+      setTimeout(() => d.remove(), 2200);
+    }
+
+    // Confetti Boom animation
+    function boom(el) {
+      const r = (el || document.body).getBoundingClientRect();
+      const x = r.left + r.width / 2;
+      const y = r.top + r.height / 2;
+      const c = ['#f0b23e', '#fff7ea', '#86e0a3', '#ffd2c2', '#2a140b', '#25d366'];
+      for (let i = 0; i < 24; i++) {
+        const d = document.createElement('i');
+        d.className = 'cf';
+        d.style.cssText = `left:${x}px;top:${y}px;background:${c[i % c.length]};--dx:${(Math.random() - .5) * 280}px;--dy:${-80 - Math.random() * 180}px;--r:${Math.random() * 720}deg`;
+        document.body.appendChild(d);
+        setTimeout(() => d.remove(), 1200);
+      }
+    }
+
+    // Recommendation Picker
+    function pick(t) {
+      const all = S.menu.flatMap(c => c.items).filter(i => i.a && (!vegOnly || i.v));
+      const e = $('#pick');
+      if (!all.length) {
+        if (e) e.innerHTML = '<p class="mu">Nothing to pick right now 🙈</p>';
+        return;
+      }
+      const it = all[Math.floor(Math.random() * all.length)];
+      if (e) e.innerHTML = `
+        <div style="background:var(--cream); color:var(--ink); border-radius:16px; padding:12px; margin:12px 0; animation:pop .4s; display:grid;">
+          <small style="color:#7a4a35; font-weight:800;">🍛 आजचं खास सुचवणं (Today's Pick)</small>
+          <b style="font-size:1.2rem; font-family:var(--d);">${esc(it.n)}</b>
+          <span>${it.p ? '₹' + esc(it.p) + ' · ' : ''}${esc(it.d)}</span>
+          <button class="btn sm" style="margin-top:8px; justify-self:start;" data-act="add_food" data-id="${it.id}">+ Add to Order</button>
+        </div>
+      `;
+      boom(t);
+    }
+
+    // Event Handling
+    document.addEventListener('input', e => {
+      if (e.target.id === 'q') {
+        q = e.target.value;
+        const mm = $('#mm');
+        if (mm) mm.innerHTML = menuBlock();
+      }
+      if (e.target.id === 'vg') {
+        vegOnly = e.target.checked;
+        const mm = $('#mm');
+        if (mm) mm.innerHTML = menuBlock();
+      }
+      // Direct config bind
+      const k = e.target.dataset && e.target.dataset.k;
+      if (k) {
+        const keys = k.split('.');
+        let o = S;
+        for (let i = 0; i < keys.length - 1; i++) o = o[keys[i]];
+        o[keys[keys.length - 1]] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+      }
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.target.id === 'pw') act('dologin', e.target);
+    });
+
+    document.addEventListener('click', e => {
+      const t = e.target.closest('[data-act]');
+      if (t) act(t.dataset.act, t);
+    });
+
+    // Central Action Dispatcher
+    async function act(a, t) {
+      const id = t.dataset.id;
+      const i = +t.dataset.i;
+      const j = +t.dataset.j;
+
+      // Navigation & Tabs
+      if (a === 'nav') {
+        currentView = t.dataset.v;
+        render();
+      }
+      else if (a === 'sub_tab') {
+        currentView = 'guest';
+        currentTab = t.dataset.tab;
+        render();
+      }
+      else if (a === 'cat') {
+        mcat = i;
+        const mm = $('#mm');
+        if (mm) mm.innerHTML = menuBlock();
+      }
+      else if (a === 'acat') {
+        mcat = i;
+        render();
+      }
+      else if (a === 'atab') {
+        currentTab = t.dataset.t;
+        render();
+      }
+      else if (a === 's_filter') {
+        staffDashFilter = t.dataset.f;
+        render();
+      }
+
+      // Cart Actions
+      else if (a === 'add_food') {
+        const item = S.menu.flatMap(c => c.items).find(x => x.id === id);
+        if (item) addToCart(item, 'food');
+      }
+      else if (a === 'add_toiletries') {
+        const item = S.toiletries.find(x => x.id === id);
+        if (item) addToCart(item, 'toiletries');
+      }
+      else if (a === 'add_custom_request') {
+        addCustomRequest();
+      }
+      else if (a === 'cart_plus') {
+        updateCartQty(id, 1);
+      }
+      else if (a === 'cart_minus') {
+        updateCartQty(id, -1);
+      }
+      else if (a === 'open_cart') {
+        showCartModal = true;
+        render();
+      }
+      else if (a === 'close_cart') {
+        showCartModal = false;
+        render();
+      }
+      else if (a === 'do_submit_order') {
+        submitOrder(false, false);
+      }
+      else if (a === 'do_submit_order_wa') {
+        submitOrder(true, false);
+      }
+      else if (a === 'do_submit_order_sms') {
+        submitOrder(false, true);
+      }
+
+      // Tracking Page actions
+      else if (a === 'set_track_room') {
+        const val = $('#track_room_input').value.trim();
+        guestRoomNumber = val;
+        localStorage.setItem('shyadri_room', val);
+        render();
+      }
+      else if (a === 'refresh_orders') {
+        if (sbClient) fetchSupabaseOrders();
+        toast('Board refreshed ✓');
+        render();
+      }
+
+      // Verification Alert Modal Actions
+      else if (a === 'verify_accept') {
+        promptUpdateOrderStatus(id, 'accepted');
+      }
+      else if (a === 'confirm_verify') {
+        if (pendingVerifyOrder) {
+          await applyOrderStatus(pendingVerifyOrder.orderId, pendingVerifyOrder.newStatus);
+        }
+      }
+      else if (a === 'cancel_verify') {
+        pendingVerifyOrder = null;
+        render();
+      }
+      else if (a === 'set_status') {
+        const st = t.dataset.st;
+        promptUpdateOrderStatus(id, st);
+      }
+
+      // Admin & Modals
+      else if (a === 'login') {
+        login = true;
+        render();
+      }
+      else if (a === 'closelogin') {
+        login = false;
+        render();
+      }
+      else if (a === 'dologin') {
+        const val = $('#pw').value;
+        const hash = await sha(val);
+        // Supports configured hash or fallback 'admin123'
+        if (hash === S.pw || val === 'admin123') {
+          admin = true;
+          login = false;
+          currentTab = 'notices';
+          render();
+        } else {
+          $('#lst').textContent = 'Wrong password (try admin123)';
+        }
+      }
+      else if (a === 'logout') {
+        admin = false;
+        render();
+      }
+      else if (a === 'save_all') {
+        try {
+          localStorage.setItem('shyadri_config', JSON.stringify(S));
+          toast('Settings saved successfully ✓');
+        } catch(e){}
+        admin = false;
+        render();
+      }
+      else if (a === 'addnotice') {
+        const text = $('#nt').value.trim();
+        if (text) {
+          S.notices.push({ id: uid(), t: text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+          try { localStorage.setItem('shyadri_config', JSON.stringify(S)); }catch(e){}
+          toast('Notice published ✓');
+          render();
+        }
+      }
+      else if (a === 'delnotice') {
+        S.notices.splice(i, 1);
+        try { localStorage.setItem('shyadri_config', JSON.stringify(S)); }catch(e){}
+        render();
+      }
+      else if (a === 'addcat') {
+        S.menu.push({ cat: 'New Category', items: [] });
+        mcat = S.menu.length - 1;
+        render();
+      }
+      else if (a === 'delcat') {
+        if (confirm('Delete this category?')) {
+          S.menu.splice(mcat, 1);
+          mcat = 0;
+          render();
+        }
+      }
+      else if (a === 'additem') {
+        S.menu[mcat].items.push({ id: uid(), n: 'New Dish', p: '100', d: '', v: true, a: true });
+        render();
+      }
+      else if (a === 'delitem') {
+        S.menu[mcat].items.splice(j, 1);
+        render();
+      }
+      else if (a === 'addrule') {
+        S.rules.push('New house rule');
+        render();
+      }
+      else if (a === 'delrule') {
+        S.rules.splice(i, 1);
+        render();
+      }
+      else if (a === 'save_sb_settings') {
+        const u = $('#cfg_sb_url').value.trim();
+        const k = $('#cfg_sb_key').value.trim();
+        S.supabase = { url: u, key: k, connected: false };
+        try { localStorage.setItem('shyadri_config', JSON.stringify(S)); }catch(e){}
+        initSupabase();
+        toast('Supabase settings updated');
+        render();
+      }
+
+      // Fun & Copy
+      else if (a === 'copy') {
+        try {
+          await navigator.clipboard.writeText(t.dataset.v);
+          toast('Copied to clipboard ✓');
+          boom(t);
+        } catch(e) {
+          toast('Selection copied');
+        }
+      }
+      else if (a === 'pick') {
+        pick(t);
+      }
+      else if (a === 'owl') {
+        const c = $('#car');
+        if (c) {
+          c.classList.add('fast');
+          setTimeout(() => c.classList.remove('fast'), 2000);
+        }
+        boom($('.sunc'));
+      }
+    }
+
+    // Parallax mouse tilt
+    document.addEventListener('pointermove', e => {
+      const h = $('#hero');
+      if (!h) return;
+      const r = h.getBoundingClientRect();
+      h.style.setProperty('--px', Math.max(-.5, Math.min(.5, (e.clientX - r.left) / r.width - .5)).toFixed(3));
+    });
+
+    // Auto-poll orders every 10 seconds for live board
+    setInterval(() => {
+      if (sbClient) fetchSupabaseOrders();
+    }, 10000);
+
+    // Initial startup
+    initSupabase();
+    render();
+  </script>
+</body>
+</html>
