@@ -392,8 +392,20 @@
       try { localStorage.setItem('shyadri_orders', JSON.stringify(ordersList)); }catch(e){}
     }
 
-    // Supabase Client Initialization (Background & Silent)
+    // Supabase Client Initialization (Shared Live Feed Across All Devices)
     let sbClient = null;
+    
+    // Resolve Supabase key from code, localStorage, or URL param
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramKey = urlParams.get('sb_key') || urlParams.get('key');
+    if (paramKey) {
+      S.supabase.key = paramKey;
+      try { localStorage.setItem('shyadri_sb_key', paramKey); }catch(e){}
+    } else {
+      const storedKey = localStorage.getItem('shyadri_sb_key');
+      if (storedKey) S.supabase.key = storedKey;
+    }
+
     function initSupabase() {
       if (window.supabase && S.supabase && S.supabase.url && S.supabase.key) {
         try {
@@ -402,7 +414,7 @@
           fetchSupabaseOrders();
           subscribeToSupabaseRealtime();
         } catch(err) {
-          console.warn("Supabase background init:", err);
+          console.warn("Supabase live init:", err);
         }
       }
     }
@@ -414,9 +426,13 @@
           .from('hotel_orders')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(50);
+          .limit(100);
         if (!error && data) {
-          ordersList = data;
+          ordersList = data.map(o => ({
+            ...o,
+            id: o.order_code || o.id,
+            uuid: o.id
+          }));
           try { localStorage.setItem('shyadri_orders', JSON.stringify(ordersList)); }catch(e){}
           render();
         }
@@ -426,21 +442,23 @@
     function subscribeToSupabaseRealtime() {
       if (!sbClient) return;
       try {
-        sbClient.channel('public:hotel_orders')
+        sbClient.channel('hotel_orders_live_feed')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'hotel_orders' }, payload => {
             if (payload.eventType === 'INSERT') {
-              const exists = ordersList.some(o => o.id === payload.new.id);
+              const mapped = { ...payload.new, id: payload.new.order_code || payload.new.id, uuid: payload.new.id };
+              const exists = ordersList.some(o => (o.uuid === mapped.uuid || o.id === mapped.id));
               if (!exists) {
-                ordersList.unshift(payload.new);
+                ordersList.unshift(mapped);
                 playHotelChime();
-                toast(`🔔 New Order from Room ${payload.new.room_number}!`);
+                toast(`🔔 New Order from Room ${mapped.room_number}!`);
               }
             } else if (payload.eventType === 'UPDATE') {
-              const idx = ordersList.findIndex(o => o.id === payload.new.id);
-              if (idx !== -1) ordersList[idx] = payload.new;
-              else ordersList.unshift(payload.new);
+              const mapped = { ...payload.new, id: payload.new.order_code || payload.new.id, uuid: payload.new.id };
+              const idx = ordersList.findIndex(o => (o.uuid === mapped.uuid || o.id === mapped.id));
+              if (idx !== -1) ordersList[idx] = mapped;
+              else ordersList.unshift(mapped);
             } else if (payload.eventType === 'DELETE') {
-              ordersList = ordersList.filter(o => o.id !== payload.old.id);
+              ordersList = ordersList.filter(o => (o.uuid !== payload.old.id && o.id !== payload.old.id));
             }
             try { localStorage.setItem('shyadri_orders', JSON.stringify(ordersList)); }catch(e){}
             render();
@@ -727,6 +745,7 @@
 
     async function applyOrderStatus(orderId, newStatus) {
       const idx = ordersList.findIndex(o => o.id === orderId);
+      const target = idx !== -1 ? ordersList[idx] : null;
       if (idx !== -1) {
         ordersList[idx].status = newStatus;
         if (newStatus === 'accepted') ordersList[idx].accepted_at = new Date().toISOString();
@@ -734,17 +753,19 @@
         try { localStorage.setItem('shyadri_orders', JSON.stringify(ordersList)); }catch(e){}
       }
 
-      // Update in Supabase
+      // Instant Update in Supabase Cloud
       if (sbClient) {
         try {
-          sbClient
-            .from('hotel_orders')
-            .update({ 
-              status: newStatus,
-              accepted_at: newStatus === 'accepted' ? new Date().toISOString() : undefined,
-              completed_at: newStatus === 'delivered' ? new Date().toISOString() : undefined
-            })
-            .eq('id', orderId).then();
+          const updatePayload = {
+            status: newStatus,
+            accepted_at: newStatus === 'accepted' ? new Date().toISOString() : undefined,
+            completed_at: newStatus === 'delivered' ? new Date().toISOString() : undefined
+          };
+          const matchCol = (target && target.uuid) ? 'id' : 'order_code';
+          const matchVal = (target && target.uuid) ? target.uuid : orderId;
+          sbClient.from('hotel_orders').update(updatePayload).eq(matchCol, matchVal).then(() => {
+            fetchSupabaseOrders();
+          });
         } catch(e){}
       }
 
@@ -1514,15 +1535,23 @@
             <h2>⚡ Supabase Cloud Database</h2>
             <p class="mu" style="font-size:.9rem;">Connected Endpoint: <code>https://uvjqhfvxghtrvogdmzxz.supabase.co/rest/v1/</code></p>
             <div class="kv">
-              <span class="mu">Cloud Sync</span>
-              <b style="color:var(--ok);">● Active &amp; Ready</b>
+              <span class="mu">Live Cloud Feed</span>
+              <b style="color:${(sbClient && S.supabase.key) ? 'var(--ok)' : 'var(--oc)'};">
+                ${(sbClient && S.supabase.key) ? '● Realtime Live & Connected' : '⚠️ Paste Anon Key below to activate multi-device sync'}
+              </b>
             </div>
             <div class="kv" style="margin-top:8px;">
               <span class="mu">Total Orders Recorded</span>
               <b>${ordersList.length}</b>
             </div>
-            <p style="font-size:.84rem; color:var(--cr2); margin-top:10px;">
-              Guest room orders and status updates sync automatically in the background across devices.
+
+            <div style="margin-top:14px; border-top:1.5px dashed rgba(255,247,234,.3); padding-top:10px;">
+              <label>Supabase Anon Key (from Project Settings ➡️ API)</label>
+              <input id="admin_sb_key" type="password" value="${esc(S.supabase ? S.supabase.key : '')}" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6...">
+              <button class="btn sm" data-act="save_admin_sb_key" style="margin-top:4px;">Connect &amp; Sync All Devices</button>
+            </div>
+            <p style="font-size:.82rem; color:var(--cr2); margin-top:8px;">
+              Once connected, any order accepted by staff will update on the guest screen within milliseconds across all phones and tablets.
             </p>
           </div>
         `;
@@ -1881,6 +1910,16 @@
         S.rules.splice(i, 1);
         render();
       }
+      else if (a === 'save_admin_sb_key') {
+        const k = $('#admin_sb_key').value.trim();
+        if (k) {
+          S.supabase.key = k;
+          try { localStorage.setItem('shyadri_sb_key', k); }catch(e){}
+          initSupabase();
+          toast('Live Cloud Feed Connected ✓');
+          render();
+        }
+      }
 
       // Fun & Copy
       else if (a === 'copy') {
@@ -1913,10 +1952,10 @@
       h.style.setProperty('--px', Math.max(-.5, Math.min(.5, (e.clientX - r.left) / r.width - .5)).toFixed(3));
     });
 
-    // Auto-poll orders every 10 seconds for live board
+    // Auto-poll orders every 2 seconds for instant shared live feed across all devices
     setInterval(() => {
       if (sbClient) fetchSupabaseOrders();
-    }, 10000);
+    }, 2000);
 
     // Initial startup
     initSupabase();
