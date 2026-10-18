@@ -415,9 +415,12 @@ function smartReply(q){
 
  // 8. Dish Suggestion / "What should I eat?"
  if(text.includes('suggest') || text.includes('recommend') || text.includes('special') || text.includes('काय खा') || text.includes('dish') || text.includes('खायचं') || text.includes('best')){
-   if(activeItems.length){
-     const pick = activeItems[Math.floor(Math.random() * activeItems.length)];
-     return `🍛 How about trying our *${pick.n}* (${pick.category}) for ₹${pick.p || 'N/A'}? ${pick.d || 'A favorite among our guests!'}\n\nTap "Order Food" to order!`;
+   const meal = getMealContext();
+   const pool = getMealItems(meal, activeItems);
+   const candidates = pool.length ? pool : activeItems;
+   if(candidates.length){
+     const pick = candidates[Math.floor(Math.random() * candidates.length)];
+     return `🍛 For this time of day, how about trying our *${pick.n}* (${pick.category}) for ₹${pick.p || 'N/A'}? ${pick.d || 'A favorite among our guests!'}\n\nTap "Order Food" to order!`;
    }
  }
 
