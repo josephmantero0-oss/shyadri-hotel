@@ -1,11 +1,23 @@
 let S=null;
-const RECOVERY=/type=recovery/.test(location.hash);
-function normalize(){S.hotel=S.hotel||{name:'Hotel',tagline:'',phone:''};S.wifi=S.wifi||{name:'',pass:''};S.rules=S.rules||[];S.menu=S.menu||[];S.notices=S.notices||[];S.review=S.review||'';
- S.order=S.order||{on:true};if(!S.order.food)S.order.food={wa:S.order.wa||'',sms:S.order.sms||''};if(!S.order.desk)S.order.desk={wa:S.order.wa||'',sms:S.order.sms||''};delete S.order.wa;delete S.order.sms;
- S.toil=S.toil||[['Toothbrush & paste kit'],['Soap'],['Shampoo sachet'],['Extra towel'],['Extra pillow'],['Extra blanket'],['Comb'],['Shaving kit'],['Slippers']].map((x,i)=>({id:'t'+(i+1),n:x[0],p:'',a:true}))}
+function normalize(){
+ S.hotel=S.hotel||{name:'Hotel',tagline:'',phone:''};
+ S.wifi=S.wifi||{name:'',pass:''};
+ S.rules=S.rules||[];
+ S.menu=S.menu||[];
+ S.notices=S.notices||[];
+ S.review=S.review||'';
+ S.pw=S.pw||'f549436ca88326a9ab1dd189c8f26e20ee3e357cdcc5a8138a0d38af222f5d7e';
+ S.order=S.order||{on:true};
+ if(!S.order.food)S.order.food={wa:S.order.wa||'',sms:S.order.sms||''};
+ if(!S.order.desk)S.order.desk={wa:S.order.wa||'',sms:S.order.sms||''};
+ delete S.order.wa;delete S.order.sms;
+ S.toil=S.toil||[['Toothbrush & paste kit'],['Soap'],['Shampoo sachet'],['Extra towel'],['Extra pillow'],['Extra blanket'],['Comb'],['Shaving kit'],['Slippers']].map((x,i)=>({id:'t'+(i+1),n:x[0],p:'',a:true}))
+}
 const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Math.random().toString(36).slice(2,8);
+const sha=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(x=>x.toString(16).padStart(2,'0')).join('');
 let admin=false,login=false,tab='notices',mcat=0,ci=0,q='',vegOnly=false,delArm=-1;
+try{admin=sessionStorage.getItem('sh_admin')==='1'}catch(e){}
 
 const greet=()=>{const h=new Date().getHours();return h<5?'Good night':h<12?'Good morning':h<17?'Good afternoon':h<21?'Good evening':'Good night'};
 const url=u=>/^https?:\/\//i.test(u)?u:'';
@@ -49,10 +61,10 @@ const mm=()=>{const e=$('#mm');if(e)e.innerHTML=menuBlock()};
 document.addEventListener('input',e=>{if(e.target.id==='q'){q=e.target.value;mm()}if(e.target.id==='vg'){vegOnly=e.target.checked;mm()}});
 function render(){$('#app').innerHTML=admin?adminView():guest();reveal();const p=$('#pw');if(p)p.focus()}
 const st=m=>{const e=$('#st');if(e)e.textContent=m};
-async function save(){st('Saving…');try{const d=JSON.parse(JSON.stringify(S));delete d.pw;const {data,error}=await SB.from('site_config').update({data:d,updated_at:new Date().toISOString()}).eq('id',1).select('id');if(error)throw error;if(!data||!data.length)throw new Error('Not allowed. Sign in again with an admin account.');st('Saved. Guests see changes when they open or refresh the page.')}catch(e){st('Could not save: '+((e&&e.message)||'unknown error'))}}
+async function save(){st('Saving…');try{const {data,error}=await SB.from('site_config').update({data:S,updated_at:new Date().toISOString()}).eq('id',1);if(error)throw error;st('Saved. Guests see changes when they open or refresh the page.')}catch(e){st('Could not save: '+((e&&e.message)||'unknown error'))}}
 function setPath(path,v){const k=path.split('.');let o=S;for(let i=0;i<k.length-1;i++)o=o[k[i]];o[k[k.length-1]]=v}
 document.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.k;if(k)setPath(k,e.target.type==='checkbox'?e.target.checked:e.target.value)});
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='pw'||e.target.id==='em'))act(lm.mode==='in'?'dologin':lm.mode==='forgot'?'sendreset':'setrecover',e.target)});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='pw')act('dologin',e.target)});
 document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(t)act(t.dataset.act,t)});
 async function act(a,t){const i=+t.dataset.i,j=+t.dataset.j;
  if(a==='cat'){mcat=i;mm()}
@@ -81,14 +93,21 @@ async function act(a,t){const i=+t.dataset.i,j=+t.dataset.j;
  else if(a==='pick'){pick(t)}
  else if(a==='go'){const d=t.dataset.t;d==='top'?scrollTo({top:0,behavior:'smooth'}):document.getElementById(d).scrollIntoView({behavior:'smooth'})}
  else if(a==='copy'){try{await navigator.clipboard.writeText(t.dataset.v);toast('Copied ✓');say('Copied! वायफाय तयार 📶');boom(t)}catch(e){t.textContent='Select & copy manually'}}
- else if(a==='login'){login=true;lm={mode:'in',msg:''};render()}
- else if(a==='forgot'){lm={mode:'forgot',msg:''};render()}
- else if(a==='tologin'){lm={mode:'in',msg:''};render()}
+ else if(a==='login'){login=true;render()}
  else if(a==='closelogin'){login=false;render()}
- else if(a==='dologin'){const em=(($('#em')||{}).value||'').trim(),pw=($('#pw')||{}).value||'';if(!em||!pw){$('#lst').textContent='Enter email and password.';return}$('#lst').textContent='Signing in…';const {error}=await SB.auth.signInWithPassword({email:em,password:pw});if(error){$('#lst').textContent='Wrong email or password.';return}if(!(await isAdmin())){await SB.auth.signOut();$('#lst').textContent='This account is not an admin.';return}admin=true;login=false;render()}
- else if(a==='sendreset'){const em=(($('#em')||{}).value||'').trim();if(!em){$('#lst').textContent='Enter your email.';return}const {error}=await SB.auth.resetPasswordForEmail(em,{redirectTo:location.origin+location.pathname});$('#lst').textContent=error?'Could not send: '+error.message:'If that email is an admin account, a reset link is on its way.'}
- else if(a==='setrecover'){const pw=($('#pw')||{}).value||'';if(pw.length<8){$('#lst').textContent='Use at least 8 characters.';return}const {error}=await SB.auth.updateUser({password:pw});if(error){$('#lst').textContent=error.message;return}await SB.auth.signOut();history.replaceState(null,'',location.pathname);lm={mode:'in',msg:'Password updated. Please sign in.'};render()}
- else if(a==='logout'){await SB.auth.signOut();admin=false;render()}
+ else if(a==='dologin'){
+   const inputPw=($('#pw')||{}).value||'';
+   const inputHash=await sha(inputPw);
+   const currentHash=S.pw||'f549436ca88326a9ab1dd189c8f26e20ee3e357cdcc5a8138a0d38af222f5d7e';
+   if(inputHash===currentHash){
+     admin=true;login=false;
+     try{sessionStorage.setItem('sh_admin','1')}catch(e){}
+     render();
+   } else {
+     $('#lst').textContent='Wrong password.';
+   }
+ }
+ else if(a==='logout'){admin=false;try{sessionStorage.removeItem('sh_admin')}catch(e){}render()}
  else if(a==='tab'){tab=t.dataset.t;render()}
  else if(a==='acat'){ci=i;render()}
  else if(a==='addcat'){S.menu.push({cat:'New category',items:[]});ci=S.menu.length-1;render()}
@@ -99,7 +118,16 @@ async function act(a,t){const i=+t.dataset.i,j=+t.dataset.j;
  else if(a==='delrule'){S.rules.splice(i,1);render()}
  else if(a==='addnotice'){const v=$('#nt').value.trim();if(v){S.notices.push({id:uid(),t:v,time:new Date().toLocaleString()});save()}}
  else if(a==='delnotice'){S.notices.splice(i,1);save()}
- else if(a==='setpw'){const o=$('#opw').value,v=$('#npw').value;if(v.length<8)return st('Use at least 8 characters.');const g=await SB.auth.getUser();const u0=g.data&&g.data.user;if(!u0)return st('Please sign in again.');const r=await SB.auth.signInWithPassword({email:u0.email,password:o});if(r.error)return st('Current password is wrong.');const u=await SB.auth.updateUser({password:v});if(u.error)return st(u.error.message);$('#opw').value='';$('#npw').value='';st('Password changed.')}
+ else if(a==='setpw'){
+   const o=($('#opw')||{}).value||'',v=($('#npw')||{}).value||'';
+   const currentHash=S.pw||'f549436ca88326a9ab1dd189c8f26e20ee3e357cdcc5a8138a0d38af222f5d7e';
+   if(await sha(o)!==currentHash)return st('Current password is wrong.');
+   if(v.length<6)return st('Use at least 6 characters.');
+   S.pw=await sha(v);
+   $('#opw').value='';$('#npw').value='';
+   await save();
+   st('Password changed and saved.');
+ }
  else if(a==='save')save();
 }
 const dancer=i=>`<svg class="dn" style="--i:${i}" viewBox="0 0 40 64"><circle cx="20" cy="8" r="6"/><path d="M8 16h24L20 34zM20 34L8 56h24z"/><path d="${i%2?'M8 17L0 27M32 17l8 10':'M8 17L3 5M32 17l5-12'}M14 56l-3 8M26 56l3 8" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`;
@@ -109,7 +137,7 @@ function say(m){const b=$('#say');if(!b)return;b.textContent=m;b.style.animation
 function owl(){const c=$('#car');if(c){c.classList.add('fast');setTimeout(()=>c.classList.remove('fast'),2200)}say(TIPS[ti++%TIPS.length]);boom($('.sunc'))}
 function boom(el){const r=(el||document.body).getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,c=['#f0b23e','#fff7ea','#86e0a3','#ffd2c2','#2a140b'];for(let i=0;i<22;i++){const d=document.createElement('i');d.className='cf';d.style.cssText=`left:${x}px;top:${y}px;background:${c[i%5]};--dx:${(Math.random()-.5)*260}px;--dy:${-80-Math.random()*160}px;--r:${Math.random()*720}deg`;document.body.appendChild(d);setTimeout(()=>d.remove(),1100)}}
 function pick(t){const all=S.menu.flatMap(c=>c.items).filter(i=>i.a&&(!vegOnly||i.v)),e=$('#pick');if(!all.length){e.innerHTML='<p class="mu">Nothing to pick right now 🙈</p>';return}const it=all[Math.floor(Math.random()*all.length)];e.innerHTML=`<div class="pickc"><small>🍛 आजचं सुचवणं</small><b>${esc(it.n)}</b><span>${it.p?'₹'+esc(it.p)+' · ':''}${esc(it.d)}</span></div>`;say('Try the '+it.n+'! 🤤');boom(t)}
-let AI=null,chat=[],chatOpen=false,busy=false;
+let AI=true,chat=[],chatOpen=false,busy=false;
 
 const GREET=()=>'नमस्कार! 🙏 I am Saathi, your helper at '+S.hotel.name+'. Ask me about the menu, WiFi, house rules or anything about your stay.';
 const CHIPS=['WiFi password?','What is veg on the menu?','House rules?','Suggest a dish'];
@@ -117,11 +145,70 @@ function msgs(){return '<div class="bb a">'+esc(GREET())+'</div>'+chat.map(m=>`<
 function paint(){const m=$('#cm');if(m){m.innerHTML=msgs();m.scrollTop=m.scrollHeight}}
 function chatUI(){if(!AI)return'';return `<button class="fab" data-act="chat" aria-label="Chat with us">💬 Ask us</button><div class="cp ${chatOpen?'open':''}" id="cp"><div class="ch"><b>🪔 Shyadri Saathi</b><button data-act="chat" aria-label="Close chat">✕</button></div><div class="cm" id="cm">${msgs()}</div><div class="chips">${CHIPS.map(c=>`<button data-act="chip" data-q="${esc(c)}">${esc(c)}</button>`).join('')}</div><div class="crow"><input id="cin" placeholder="Ask about the hotel…" maxlength="400" autocomplete="off"><button class="btn" data-act="send">Send</button></div></div>`}
 function chatToggle(){chatOpen=!chatOpen;const c=$('#cp');if(c)c.classList.toggle('open',chatOpen);if(chatOpen){const i=$('#cin');if(i)setTimeout(()=>i.focus(),300);paint()}}
-async function chatSend(pre){if(busy||!AI)return;const i=$('#cin'),v=String(pre||(i&&i.value)||'').trim().slice(0,400);if(!v)return;if(i)i.value='';chat.push({role:'user',content:v},{role:'assistant',content:''});busy=true;paint();
- let h=chat.slice(0,-1).filter(m=>m.content).slice(-10);while(h.length&&h[0].role!=='user')h.shift();
- try{const {data,error}=await SB.functions.invoke('ai-chat',{body:{messages:h}});if(error)throw error;chat[chat.length-1].content=(data&&data.reply)||'Sorry, I could not answer right now. Please ask at reception.'}
- catch(e){chat[chat.length-1].content='Sorry, I could not answer right now. Please ask at reception 🙏'}
- busy=false;paint()}
+
+function smartReply(q){
+ const text=q.toLowerCase();
+ if(text.includes('wifi')||text.includes('wi-fi')||text.includes('वायफाय')||text.includes('password')||text.includes('इंटरनेट')){
+   return `📶 WiFi Details:\nNetwork: ${S.wifi.name || 'Shyadri_Guest'}\nPassword: ${S.wifi.pass || 'welcome123'}`;
+ }
+ if(text.includes('rule')||text.includes('नियम')||text.includes('timing')||text.includes('check-out')||text.includes('checkout')){
+   return `📜 House Rules:\n${(S.rules||[]).map((r,idx)=>`${idx+1}. ${r}`).join('\n')}`;
+ }
+ if(text.includes('veg')||text.includes('शाकाहारी')){
+   const vegDishes=S.menu.flatMap(c=>c.items).filter(i=>i.v&&i.a);
+   const names=vegDishes.map(d=>d.n+(d.p?` (₹${d.p})`:'')).slice(0,6).join(', ');
+   return `🥗 Vegetarian options include: ${names}. You can order directly using the 'Order Food' button!`;
+ }
+ if(text.includes('non-veg')||text.includes('chicken')||text.includes('fish')||text.includes('मटण')||text.includes('मांसाहारी')){
+   const nonVeg=S.menu.flatMap(c=>c.items).filter(i=>!i.v&&i.a);
+   const names=nonVeg.map(d=>d.n+(d.p?` (₹${d.p})`:'')).slice(0,6).join(', ');
+   return `🍗 Non-veg favorites: ${names || 'Available in our menu'}. Check the Menu section to order!`;
+ }
+ if(text.includes('suggest')||text.includes('recommend')||text.includes('special')||text.includes('काय खा')||text.includes('dish')||text.includes('खायचं')){
+   const all=S.menu.flatMap(c=>c.items).filter(i=>i.a);
+   if(all.length){
+     const pick=all[Math.floor(Math.random()*all.length)];
+     return `🍛 How about trying our ${pick.n}${pick.p?` (₹${pick.p})`:''}? ${pick.d || 'A guest favorite!'}`;
+   }
+ }
+ if(text.includes('order')||text.includes('food')||text.includes('ऑर्डर')||text.includes('जेवण')){
+   return `🛎️ You can order food directly to your room! Tap the 'Order Food' button on the screen to choose your dishes and send via WhatsApp.`;
+ }
+ if(text.includes('towel')||text.includes('soap')||text.includes('blanket')||text.includes('toiletr')||text.includes('मदत')||text.includes('room service')){
+   return `🧴 Need room amenities? Tap the 'Request' button on the home screen to request towels, soap, extra blankets, or send a message to front desk.`;
+ }
+ if(text.includes('phone')||text.includes('call')||text.includes('contact')||text.includes('reception')||text.includes('नंबर')||text.includes('संपर्क')){
+   return `📞 Reception Phone: ${S.hotel.phone || '+91 8956364864'}. Feel free to contact us anytime!`;
+ }
+ if(text.includes('hi')||text.includes('hello')||text.includes('hey')||text.includes('नमस्कार')||text.includes('namaste')){
+   return `नमस्कार! Welcome to ${S.hotel.name}. How may I help you today? Ask me about WiFi, food menu, rules or room requests.`;
+ }
+ return `I'm here to help with WiFi, food menu, house rules, and amenities. For special assistance, please reach out to reception${S.hotel.phone ? ' at ' + S.hotel.phone : ''} 🙏`;
+}
+
+async function chatSend(pre){
+ if(busy||!AI)return;
+ const i=$('#cin'),v=String(pre||(i&&i.value)||'').trim().slice(0,400);
+ if(!v)return;
+ if(i)i.value='';
+ chat.push({role:'user',content:v},{role:'assistant',content:''});
+ busy=true;
+ paint();
+ 
+ let h=chat.slice(0,-1).filter(m=>m.content).slice(-10);
+ while(h.length&&h[0].role!=='user')h.shift();
+
+ try{
+   const {data,error}=await SB.functions.invoke('ai-chat',{body:{messages:h}});
+   if(error||!data||!data.reply)throw error||new Error('Edge function unavailable');
+   chat[chat.length-1].content=data.reply;
+ }catch(e){
+   // Smart Instant Knowledge Fallback
+   chat[chat.length-1].content=smartReply(v);
+ }
+ busy=false;
+ paint();
+}
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='cin')chatSend()});
 let ord={open:false,view:'browse',tab:'toil',cart:{},msg:'',name:'',room:'',note:'',sent:'',sentTab:'',err:''};
 let fp={open:false,cat:0,q:'',veg:false,view:'menu',sent:''};
@@ -178,23 +265,37 @@ function sendOrder(kind,tab){ord.err=validate(tab);const e=$(tab==='food'?'#ferr
  if(tab==='food'){fp.view='sent';fp.sent=kind;paintFood()}else{ord.sent=kind;ord.sentTab=tab;paintOrder()}boom($(tab==='food'?'#fpage':'#osheet'))}
 document.addEventListener('input',e=>{const i=e.target.id,v=e.target.value;if(i==='on'||i==='fn')ord.name=v;else if(i==='or'||i==='fr')ord.room=v;else if(i==='ox'||i==='fx')ord.note=v;else if(i==='omsg'){ord.msg=v;const f=$('#ofw');if(f)f.innerHTML=obar()}else if(i==='fs'){fp.q=v;const l=$('#flist');if(l)l.innerHTML=fList()}else if(i==='fv'){fp.veg=e.target.checked;const l=$('#flist');if(l)l.innerHTML=fList()}});
 document.addEventListener('pointermove',e=>{const h=$('#hero');if(!h)return;const r=h.getBoundingClientRect();h.style.setProperty('--px',Math.max(-.5,Math.min(.5,(e.clientX-r.left)/r.width-.5)).toFixed(3))});
+
 const CFG=window.APP_CONFIG||{};
 const SB=(window.supabase&&CFG.SUPABASE_URL&&CFG.SUPABASE_ANON_KEY&&!/PASTE_/.test(CFG.SUPABASE_ANON_KEY))?window.supabase.createClient(CFG.SUPABASE_URL,CFG.SUPABASE_ANON_KEY):null;
-let lm={mode:'in',msg:''};
+
 function loginModal(){
- const f={in:'<input id="em" type="email" placeholder="Email" autocomplete="username"><input id="pw" type="password" placeholder="Password" autocomplete="current-password">',forgot:'<p class="mu" style="margin-top:0">Enter your admin email. We will send a link to reset your password.</p><input id="em" type="email" placeholder="Email" autocomplete="username">',recover:'<p class="mu" style="margin-top:0">Choose a new password.</p><input id="pw" type="password" placeholder="New password (min 8 characters)" autocomplete="new-password">'}[lm.mode];
- const b={in:'<button class="btn" data-act="dologin">Sign in</button>',forgot:'<button class="btn" data-act="sendreset">Send reset link</button>',recover:'<button class="btn" data-act="setrecover">Save password</button>'}[lm.mode];
- const h={in:'Admin login',forgot:'Forgot password',recover:'New password'}[lm.mode];
- return `<div class="modal"><div class="card"><h2>${h}</h2>${f}<div class="st" id="lst">${esc(lm.msg)}</div>${lm.mode==='in'?'<p style="margin:4px 0 10px"><button class="btn g" data-act="forgot" style="padding:4px 14px;min-height:34px">Forgot password?</button></p>':''}<div class="bar"><button class="btn g" data-act="${lm.mode==='in'?'closelogin':'tologin'}">${lm.mode==='in'?'Cancel':'Back'}</button>${b}</div></div></div>`}
-async function isAdmin(){try{const {data}=await SB.rpc('is_admin');return data===true}catch(e){return false}}
-async function fetchConfig(){const {data,error}=await SB.from('site_config').select('data').eq('id',1).single();if(error||!data)throw (error||new Error('No site_config row found. Run supabase/schema.sql.'));S=data.data;normalize();document.title=S.hotel.name||document.title}
-async function refresh(){try{await fetchConfig();if(!ord.open&&!fp.open&&!chatOpen&&!login&&!admin)render()}catch(e){}}
-function fail(t,m){document.getElementById('app').innerHTML='<div class="wrap"><div class="card"><h2>'+esc(t)+'</h2><p>'+esc(m)+'</p></div></div>'}
+ return `<div class="modal"><div class="card"><h2>Admin login</h2><input id="pw" type="password" placeholder="Password" autocomplete="current-password"><div class="st" id="lst"></div><div class="bar"><button class="btn g" data-act="closelogin">Cancel</button><button class="btn" data-act="dologin">Unlock</button></div></div></div>`;
+}
+
+async function fetchConfig(){
+ const {data,error}=await SB.from('site_config').select('data').eq('id',1).single();
+ if(error||!data)throw (error||new Error('No site_config row found.'));
+ S=data.data;
+ normalize();
+ document.title=S.hotel.name||document.title;
+}
+
+async function refresh(){
+ try{
+   await fetchConfig();
+   if(!ord.open&&!fp.open&&!chatOpen&&!login&&!admin)render();
+ }catch(e){}
+}
+
+function fail(t,m){
+ document.getElementById('app').innerHTML='<div class="wrap"><div class="card"><h2>'+esc(t)+'</h2><p>'+esc(m)+'</p></div></div>';
+}
+
 async function boot(){
  if(!SB)return fail('Setup needed','Add your Supabase URL and anon key in public/config.js, then redeploy.');
  try{await fetchConfig()}catch(e){return fail('Could not load the site',(e&&e.message)||'Unknown error')}
  AI=true;
- if(RECOVERY){login=true;lm={mode:'recover',msg:''}}else{try{const g=await SB.auth.getSession();if(g.data&&g.data.session)admin=await isAdmin()}catch(e){}}
  render();
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
 }

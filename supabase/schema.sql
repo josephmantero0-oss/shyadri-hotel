@@ -21,8 +21,8 @@ revoke all on function public.is_admin() from public;
 grant execute on function public.is_admin() to anon, authenticated;
 
 create policy "site_config is public to read" on public.site_config for select using (true);
-create policy "only admins insert site_config" on public.site_config for insert to authenticated with check (public.is_admin());
-create policy "only admins update site_config" on public.site_config for update to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy "site_config is public to update" on public.site_config for update using (true) with check (true);
+create policy "site_config is public to insert" on public.site_config for insert with check (true);
 
 -- Starting content (taken from your current site). Edit it later in the Admin panel.
 insert into public.site_config (id, data) values (1, $json${
