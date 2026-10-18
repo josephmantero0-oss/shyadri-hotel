@@ -159,7 +159,48 @@ function smartReply(q){
  const allItems = allCategories.flatMap(c => (c.items || []).map(it => ({ ...it, category: c.cat })));
  const activeItems = allItems.filter(it => it.a);
 
- // 1. Check for specific Category matches (e.g., drinks, snacks, breakfast, beverages, meals, thali, desserts)
+ // 1. Direct Item & Keyword Search (exact name, partial name, dish keywords or description match)
+ const queryClean = text.replace(/[^a-z0-9\s]/gi, ' ').trim();
+ const queryTokens = queryClean.split(/\s+/).filter(t => t.length >= 2);
+
+ const matchedDishes = allItems.filter(it => {
+   const dName = (it.n || '').toLowerCase();
+   const dDesc = (it.d || '').toLowerCase();
+
+   // Exact or full substring match
+   if(text === dName || text.includes(dName) || (dName.length >= 3 && dName.includes(text))){
+     return true;
+   }
+
+   // Keyword tokens match (e.g. typing "chai", "sukka", "misal", "paneer", "vadi", "solkadhi")
+   const dTokens = dName.replace(/[^a-z0-9\s]/gi, ' ').split(/\s+/).filter(t => t.length >= 2);
+   const hasWordMatch = queryTokens.some(qWord => dTokens.some(dWord => dWord === qWord || (dWord.length >= 4 && (dWord.includes(qWord) || qWord.includes(dWord)))));
+   if(hasWordMatch) return true;
+
+   // Check description or category keywords if query is specific (e.g., "coriander", "sprout", "kokum")
+   if(queryTokens.length === 1 && queryTokens[0].length >= 3){
+     const qWord = queryTokens[0];
+     if(!['what','have','your','this','that','show','menu','want','give'].includes(qWord)){
+       if(dDesc.includes(qWord)) return true;
+     }
+   }
+   return false;
+ });
+
+ if(matchedDishes.length === 1){
+   const it = matchedDishes[0];
+   const status = it.a ? (it.p ? `priced at ₹${it.p}` : 'available') : 'currently sold out';
+   const vegTag = it.v ? 'Pure Veg' : 'Non-Veg';
+   const desc = it.d ? `\n_${it.d}_` : '';
+   return `🍽️ *${it.n}* [${vegTag}] (${it.category}):\nIt is ${status}.${desc}${it.a ? '\n\n🛎️ Tap "Order Food" to order directly to your room!' : ''}`;
+ }
+
+ if(matchedDishes.length > 1){
+   const list = matchedDishes.map(it => `• *${it.n}*${it.p ? ` (₹${it.p})` : ''} [${it.v ? 'Veg' : 'Non-Veg'}]${it.a ? '' : ' - Sold out'}`).join('\n');
+   return `🍽️ Matching Dishes found:\n${list}\n\n🛎️ Tap "Order Food" to order to your room!`;
+ }
+
+ // 2. Check for specific Category matches (e.g., drinks, snacks, breakfast, beverages, meals, thali, desserts)
  const matchedCat = allCategories.find(c => {
    const cName = (c.cat || '').toLowerCase();
    return text.includes(cName) || 
@@ -175,19 +216,6 @@ function smartReply(q){
      return `📋 ${matchedCat.cat} Menu:\n${list}\n\nTap "Order Food" to order directly to your room!`;
    }
    return `Our ${matchedCat.cat} section is currently being updated. Tap "Order Food" to view available dishes!`;
- }
-
- // 2. Check for specific Dish name search (e.g. "Do you have misal pav?", "Price of chicken sukka", "chai")
- const matchedDish = allItems.find(it => {
-   const dName = (it.n || '').toLowerCase();
-   return dName.length > 2 && text.includes(dName);
- });
-
- if(matchedDish){
-   const status = matchedDish.a ? (matchedDish.p ? `priced at ₹${matchedDish.p}` : 'available') : 'currently sold out';
-   const vegTag = matchedDish.v ? 'Pure Veg' : 'Non-Veg';
-   const desc = matchedDish.d ? ` (${matchedDish.d})` : '';
-   return `🍽️ *${matchedDish.n}* [${vegTag}]:\nIt is ${status}${desc} under our ${matchedDish.category} menu.${matchedDish.a ? ' You can order it right now from the "Order Food" screen!' : ''}`;
  }
 
  // 3. NON-VEG queries (evaluated before veg to avoid substring collision)
