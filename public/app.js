@@ -159,30 +159,59 @@ function smartReply(q){
  const allItems = allCategories.flatMap(c => (c.items || []).map(it => ({ ...it, category: c.cat })));
  const activeItems = allItems.filter(it => it.a);
 
- // 1. Direct Item & Keyword Search (exact name, partial name, dish keywords or description match)
+ // ── STEP 0: Detect veg/non-veg INTENT first so it can filter everything below ──
+ const isNonVegIntent = text.includes('non-veg') || text.includes('non veg') || text.includes('nonveg') ||
+                        text.includes('chicken') || text.includes('fish') || text.includes('mutton') ||
+                        text.includes('prawn') || text.includes('seafood') || text.includes('squid') ||
+                        text.includes('pomfret') || text.includes('mori') || text.includes('chonak') ||
+                        text.includes('egg') || text.includes('anda') || text.includes('मांसाहारी') ||
+                        text.includes('चिकन') || text.includes('मटण') || text.includes('मासे');
+ // "veg" is intentional veg ONLY if NOT preceded by "non"
+ const isVegOnlyIntent = !isNonVegIntent && (text.includes('veg') || text.includes('शाकाहारी') || text.includes('vegetarian') || text.includes('pure veg'));
+
+ // 1. NON-VEG direct query
+ if(isNonVegIntent && (text.includes('non-veg') || text.includes('non veg') || text.includes('nonveg') || text.includes('मांसाहारी') || text === 'non veg' || text === 'nonveg')){
+   const nonVeg = activeItems.filter(i => !i.v);
+   if(nonVeg.length){
+     const names = nonVeg.map(d => `• ${d.n}${d.p ? ` (₹${d.p})` : ''}${d.d ? ` - ${d.d}` : ''} [${d.category}]`).join('\n');
+     return `🍗 Non-Veg Dishes available:\n${names}\n\n🛎️ Tap "Order Food" to order to your room!`;
+   }
+   return `Currently there are no active non-veg items on the menu. Please check with reception!`;
+ }
+
+ // 2. PURE VEG direct query
+ if(isVegOnlyIntent && (text === 'veg' || text.includes('vegetarian') || text.includes('pure veg') || text.includes('शाकाहारी'))){
+   const vegDishes = activeItems.filter(i => i.v);
+   if(vegDishes.length){
+     const names = vegDishes.map(d => `• ${d.n}${d.p ? ` (₹${d.p})` : ''}${d.d ? ` - ${d.d}` : ''} [${d.category}]`).join('\n');
+     return `🥗 Pure Veg Options:\n${names}\n\n🛎️ Tap "Order Food" to view the full menu and order!`;
+   }
+   return `Our kitchen offers delicious pure vegetarian meals. Tap "Order Food" to view the menu!`;
+ }
+
+ // 3. Direct Item & Keyword Search — filtered by intent
  const queryClean = text.replace(/[^a-z0-9\s]/gi, ' ').trim();
- const queryTokens = queryClean.split(/\s+/).filter(t => t.length >= 2);
+ const queryTokens = queryClean.split(/\s+/).filter(t => t.length >= 2 && !['non','veg','the','and','for','are','any','show','have','what','your','this','that','want','give'].includes(t));
 
  const matchedDishes = allItems.filter(it => {
+   // Apply veg/non-veg filter based on detected intent
+   if(isNonVegIntent && it.v) return false;
+   if(isVegOnlyIntent && !it.v) return false;
+
    const dName = (it.n || '').toLowerCase();
    const dDesc = (it.d || '').toLowerCase();
 
-   // Exact or full substring match
-   if(text === dName || text.includes(dName) || (dName.length >= 3 && dName.includes(text))){
-     return true;
-   }
+   // Exact or full substring match on name
+   if(text === dName || text.includes(dName) || (dName.length >= 3 && dName.includes(text.replace(/non.?veg|vegetarian|pure veg/gi,'').trim()))) return true;
 
-   // Keyword tokens match (e.g. typing "chai", "sukka", "misal", "paneer", "vadi", "solkadhi")
+   // Keyword token match
    const dTokens = dName.replace(/[^a-z0-9\s]/gi, ' ').split(/\s+/).filter(t => t.length >= 2);
    const hasWordMatch = queryTokens.some(qWord => dTokens.some(dWord => dWord === qWord || (dWord.length >= 4 && (dWord.includes(qWord) || qWord.includes(dWord)))));
    if(hasWordMatch) return true;
 
-   // Check description or category keywords if query is specific (e.g., "coriander", "sprout", "kokum")
+   // Description keyword (only for single specific words)
    if(queryTokens.length === 1 && queryTokens[0].length >= 3){
-     const qWord = queryTokens[0];
-     if(!['what','have','your','this','that','show','menu','want','give'].includes(qWord)){
-       if(dDesc.includes(qWord)) return true;
-     }
+     if(dDesc.includes(queryTokens[0])) return true;
    }
    return false;
  });
@@ -190,54 +219,51 @@ function smartReply(q){
  if(matchedDishes.length === 1){
    const it = matchedDishes[0];
    const status = it.a ? (it.p ? `priced at ₹${it.p}` : 'available') : 'currently sold out';
-   const vegTag = it.v ? 'Pure Veg' : 'Non-Veg';
-   const desc = it.d ? `\n_${it.d}_` : '';
-   return `🍽️ *${it.n}* [${vegTag}] (${it.category}):\nIt is ${status}.${desc}${it.a ? '\n\n🛎️ Tap "Order Food" to order directly to your room!' : ''}`;
+   const vegTag = it.v ? 'Pure Veg 🟢' : 'Non-Veg 🍗';
+   const desc = it.d ? `\n${it.d}` : '';
+   return `🍽️ ${it.n} [${vegTag}] — ${it.category}\nStatus: ${status}.${desc}${it.a ? '\n\n🛎️ Tap "Order Food" to order to your room!' : ''}`;
  }
 
  if(matchedDishes.length > 1){
-   const list = matchedDishes.map(it => `• *${it.n}*${it.p ? ` (₹${it.p})` : ''} [${it.v ? 'Veg' : 'Non-Veg'}]${it.a ? '' : ' - Sold out'}`).join('\n');
-   return `🍽️ Matching Dishes found:\n${list}\n\n🛎️ Tap "Order Food" to order to your room!`;
+   const list = matchedDishes.filter(it=>it.a).map(it => `• ${it.n}${it.p ? ` (₹${it.p})` : ''} [${it.v ? 'Veg 🟢' : 'Non-Veg 🍗'}]`).join('\n');
+   return `🍽️ Matching dishes:${isNonVegIntent?' (Non-Veg)':isVegOnlyIntent?' (Veg only)':''}\n${list}\n\n🛎️ Tap "Order Food" to order!`;
  }
 
- // 2. Check for specific Category matches (e.g., drinks, snacks, breakfast, beverages, meals, thali, desserts)
+ // 4. Category match
  const matchedCat = allCategories.find(c => {
    const cName = (c.cat || '').toLowerCase();
-   return text.includes(cName) || 
+   return text.includes(cName) ||
           (cName.includes('drink') && (text.includes('drink') || text.includes('beverage') || text.includes('चहा') || text.includes('tea') || text.includes('coffee') || text.includes('पेये'))) ||
           (cName.includes('snack') && (text.includes('snack') || text.includes('नाश्ता') || text.includes('starters') || text.includes('starter'))) ||
           (cName.includes('meal') && (text.includes('meal') || text.includes('thali') || text.includes('थाळी') || text.includes('lunch') || text.includes('dinner')));
  });
 
  if(matchedCat){
-   const items = (matchedCat.items || []).filter(i => i.a);
+   let items = (matchedCat.items || []).filter(i => i.a);
+   if(isNonVegIntent) items = items.filter(i => !i.v);
+   if(isVegOnlyIntent) items = items.filter(i => i.v);
    if(items.length){
-     const list = items.map(d => `• ${d.n}${d.p ? ` (₹${d.p})` : ''}${d.d ? ` - ${d.d}` : ''}${d.v ? ' [Veg]' : ' [Non-Veg]'}`).join('\n');
-     return `📋 ${matchedCat.cat} Menu:\n${list}\n\nTap "Order Food" to order directly to your room!`;
+     const list = items.map(d => `• ${d.n}${d.p ? ` (₹${d.p})` : ''}${d.d ? ` - ${d.d}` : ''} [${d.v ? 'Veg 🟢' : 'Non-Veg 🍗'}]`).join('\n');
+     return `📋 ${matchedCat.cat}:${isNonVegIntent?' (Non-Veg only)':isVegOnlyIntent?' (Veg only)':''}\n${list}\n\nTap "Order Food" to order!`;
    }
-   return `Our ${matchedCat.cat} section is currently being updated. Tap "Order Food" to view available dishes!`;
+   return `No ${isNonVegIntent?'non-veg':isVegOnlyIntent?'veg':''} items in that category right now. Tap "Order Food" to see the full menu!`;
  }
 
- // 3. NON-VEG queries (evaluated before veg to avoid substring collision)
- const isNonVeg = text.includes('non-veg') || text.includes('non veg') || text.includes('nonveg') || 
-                  text.includes('chicken') || text.includes('fish') || text.includes('mutton') || 
-                  text.includes('egg') || text.includes('मांसाहारी') || text.includes('चिकन') || text.includes('मटण') || text.includes('मासे');
-
- if(isNonVeg){
+ // 5. Broad non-veg / veg queries (e.g. "show me chicken options", "any non-veg?")
+ if(isNonVegIntent){
    const nonVeg = activeItems.filter(i => !i.v);
    if(nonVeg.length){
-     const names = nonVeg.map(d => `• ${d.n}${d.p ? ` (₹${d.p})` : ''}${d.d ? ` - ${d.d}` : ''} [${d.category}]`).join('\n');
-     return `🍗 Non-Veg Dishes available:\n${names}\n\nTap "Order Food" to order to your room!`;
+     const names = nonVeg.map(d => `• ${d.n}${d.p ? ` (₹${d.p})` : ''} [${d.category}]`).join('\n');
+     return `🍗 Non-Veg options available:\n${names}\n\n🛎️ Tap "Order Food" to order!`;
    }
-   return `Currently there are no active non-veg items listed on the menu. Please check with reception!`;
+   return `No non-veg items are currently available. Please check with reception!`;
  }
 
- // 4. PURE VEG queries
- if(text.includes('veg') || text.includes('शाकाहारी') || text.includes('vegetarian')){
+ if(isVegOnlyIntent){
    const vegDishes = activeItems.filter(i => i.v);
    if(vegDishes.length){
-     const names = vegDishes.map(d => `• ${d.n}${d.p ? ` (₹${d.p})` : ''}${d.d ? ` - ${d.d}` : ''} [${d.category}]`).slice(0, 8).join('\n');
-     return `🥗 Pure Veg Options:\n${names}\n\nTap "Order Food" to view the full menu and order!`;
+     const names = vegDishes.map(d => `• ${d.n}${d.p ? ` (₹${d.p})` : ''} [${d.category}]`).join('\n');
+     return `🥗 Pure Veg options:\n${names}\n\n🛎️ Tap "Order Food" to order!`;
    }
    return `Our kitchen offers delicious pure vegetarian meals. Tap "Order Food" to view the menu!`;
  }
