@@ -1,6 +1,6 @@
 let S=null;
 function normalize(){
- S.hotel=S.hotel||{name:'Hotel',tagline:'',phone:''};
+ S.hotel=S.hotel||{name:'Hotel',tagline:'',phone:'',ai_info:''};
  S.wifi=S.wifi||{name:'',pass:''};
  S.rules=S.rules||[];
  S.menu=S.menu||[];
@@ -52,7 +52,7 @@ function adminView(){
  if(tab==='notices'){b=`<div class="card"><h2>Broadcast a notice</h2><textarea id="nt" rows="3" placeholder="Message for all guests, e.g. Power cut 2-4 PM, generator on."></textarea><button class="btn" data-act="addnotice">Broadcast now</button></div><div class="card"><h2>Live notices</h2>${S.notices.map((n,i)=>`<div class="row"><p style="margin:0 0 6px">${esc(n.t)}</p><small class="mu">${esc(n.time)}</small> <button class="btn d" data-act="delnotice" data-i="${i}">Remove</button></div>`).join('')||'<p class="mu">No notices.</p>'}</div>`}
  if(tab==='menu'){const c=S.menu[ci];b=`<div class="card"><div class="pills">${S.menu.map((x,i)=>`<button class="pill ${i===ci?'on':''}" data-act="acat" data-i="${i}">${esc(x.cat)}</button>`).join('')}<button class="pill" data-act="addcat">+ Category</button></div>${c?`${inp(`menu.${ci}.cat`,c.cat,'Category name')}${c.items.map((it,j)=>{const p=`menu.${ci}.items.${j}.`;return `<div class="row">${inp(p+'n',it.n,'Dish name')}${inp(p+'p',it.p,'Price ₹')}${inp(p+'d',it.d,'Description')}<label><input type="checkbox" data-k="${p}v" ${it.v?'checked':''}>Veg</label><label><input type="checkbox" data-k="${p}a" ${it.a?'checked':''}>Available</label> <button class="btn d" data-act="delitem" data-j="${j}">Delete</button></div>`}).join('')}<div class="bar"><button class="btn g" data-act="additem">+ Add item</button><button class="btn d" data-act="delcat">${delArm===ci?'Tap again to delete':'Delete category'}</button></div>`:'<p class="mu">Add a category to start.</p>'}</div>`}
  if(tab==='order'){const dn=(k,t)=>`<div class="card"><h2>${t}</h2><label>WhatsApp number (with country code)</label>${inp('order.'+k+'.wa',S.order[k].wa,'919876543210')}<label>SMS number (blank = same as WhatsApp)</label>${inp('order.'+k+'.sms',S.order[k].sms,'919876543210')}</div>`;b=`<div class="card"><h2>Ordering</h2><label class="sw"><input type="checkbox" data-k="order.on" ${S.order.on?'checked':''}>Accept orders</label>${[S.order.food,S.order.desk].some(d=>num(d.wa)||num(d.sms))?'':'<p class="st">No number is set yet. Guests can pick items but can only copy the order until you add a number below.</p>'}<p class="mu" style="font-size:.9rem">Food orders and toiletries/messages are sent separately, each to its own number. Guests press Send in their own WhatsApp or SMS app. Orders are not stored on this site.</p></div>${dn('food','Kitchen (food orders)')}${dn('desk','Front desk (toiletries and messages)')}<div class="card"><h2>Toiletries</h2>${S.toil.map((x,i)=>`<div class="row">${inp('toil.'+i+'.n',x.n,'Item name')}${inp('toil.'+i+'.p',x.p,'Price Rs (optional)')}<label><input type="checkbox" data-k="toil.${i}.a" ${x.a?'checked':''}>Available</label> <button class="btn d" data-act="deltoil" data-i="${i}">Delete</button></div>`).join('')}<button class="btn g" data-act="addtoil">+ Add item</button></div>`}
- if(tab==='info'){b=`<div class="card"><h2>Details</h2><label>Hotel name</label>${inp('hotel.name',S.hotel.name,'')}<label>Tagline</label>${inp('hotel.tagline',S.hotel.tagline,'')}<label>Reception phone</label>${inp('hotel.phone',S.hotel.phone,'+91…')}<label>WiFi name</label>${inp('wifi.name',S.wifi.name,'')}<label>WiFi password</label>${inp('wifi.pass',S.wifi.pass,'')}<label>Google review link</label>${inp('review',S.review,'https://…')}</div><div class="card"><h2>House rules</h2>${S.rules.map((r,i)=>`<div class="row">${inp('rules.'+i,r,'Rule')}<button class="btn d" data-act="delrule" data-i="${i}">Delete</button></div>`).join('')}<button class="btn g" data-act="addrule">+ Add rule</button></div><div class="card"><h2>Admin password</h2><input id="opw" type="password" placeholder="Current password" autocomplete="current-password"><input id="npw" type="password" placeholder="New password (min 6 chars)" autocomplete="new-password"><button class="btn g" data-act="setpw">Change password</button></div>`}
+ if(tab==='info'){b=`<div class="card"><h2>Details</h2><label>Hotel name</label>${inp('hotel.name',S.hotel.name,'')}<label>Tagline</label>${inp('hotel.tagline',S.hotel.tagline,'')}<label>Reception phone</label>${inp('hotel.phone',S.hotel.phone,'+91…')}<label>WiFi name</label>${inp('wifi.name',S.wifi.name,'')}<label>WiFi password</label>${inp('wifi.pass',S.wifi.pass,'')}<label>Google review link</label>${inp('review',S.review,'https://…')}<label>Extra Hotel & Local Info for Saathi AI (pool, check-in, sightseeing, etc.)</label><textarea data-k="hotel.ai_info" rows="4" placeholder="e.g. Check-in is at 12 PM. Swimming pool is open from 7 AM to 8 PM. Hot water is 24/7. Nearby fort is 4 km away.">${esc(S.hotel.ai_info||'')}</textarea></div><div class="card"><h2>House rules</h2>${S.rules.map((r,i)=>`<div class="row">${inp('rules.'+i,r,'Rule')}<button class="btn d" data-act="delrule" data-i="${i}">Delete</button></div>`).join('')}<button class="btn g" data-act="addrule">+ Add rule</button></div><div class="card"><h2>Admin password</h2><input id="opw" type="password" placeholder="Current password" autocomplete="current-password"><input id="npw" type="password" placeholder="New password (min 6 chars)" autocomplete="new-password"><button class="btn g" data-act="setpw">Change password</button></div>`}
  return `<div class="wrap"><div class="bar"><h2 style="margin:0">Admin</h2><div><button class="btn g" data-act="logout">Exit</button> <button class="btn" data-act="save">Save changes</button></div></div><div class="st" id="st"></div><div class="pills">${[['notices','Notices'],['menu','Menu'],['info','Info & rules'],['order','Ordering']].map(t=>`<button class="pill ${tab===t[0]?'on':''}" data-act="tab" data-t="${t[0]}">${t[1]}</button>`).join('')}</div>${b}</div>`;
 }
 function reveal(){const e=document.querySelectorAll('.rv');if(!('IntersectionObserver' in window))return e.forEach(x=>x.classList.add('in'));const o=new IntersectionObserver(r=>r.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');o.unobserve(x.target)}}),{threshold:.08});e.forEach(x=>o.observe(x))}
@@ -139,51 +139,89 @@ function boom(el){const r=(el||document.body).getBoundingClientRect(),x=r.left+r
 function pick(t){const all=S.menu.flatMap(c=>c.items).filter(i=>i.a&&(!vegOnly||i.v)),e=$('#pick');if(!all.length){e.innerHTML='<p class="mu">Nothing to pick right now 🙈</p>';return}const it=all[Math.floor(Math.random()*all.length)];e.innerHTML=`<div class="pickc"><small>🍛 आजचं सुचवणं</small><b>${esc(it.n)}</b><span>${it.p?'₹'+esc(it.p)+' · ':''}${esc(it.d)}</span></div>`;say('Try the '+it.n+'! 🤤');boom(t)}
 let AI=true,chat=[],chatOpen=false,busy=false;
 
-const GREET=()=>'नमस्कार! 🙏 I am Saathi, your helper at '+S.hotel.name+'. Ask me about the menu, WiFi, house rules or anything about your stay.';
-const CHIPS=['WiFi password?','What is veg on the menu?','House rules?','Suggest a dish'];
-function msgs(){return '<div class="bb a">'+esc(GREET())+'</div>'+chat.map(m=>`<div class="bb ${m.role==='user'?'u':'a'}">${m.content?esc(m.content):'…'}</div>`).join('')}
+const GREET=()=>'नमस्कार! 🙏 I am Saathi, your helper at '+S.hotel.name+'. Ask me about the menu, WiFi, house rules, hotel facilities or anything about your stay.';
+const CHIPS=['WiFi password?','What are the non-veg options?','What is veg on the menu?','House rules?','Suggest a dish'];
+function msgs(){
+ return '<div class="bb a">'+esc(GREET())+'</div>'+chat.map(m=>{
+   if(m.role==='assistant'&&!m.content){
+     return '<div class="bb a typing"><span></span><span></span><span></span></div>';
+   }
+   return `<div class="bb ${m.role==='user'?'u':'a'}">${esc(m.content)}</div>`;
+ }).join('');
+}
 function paint(){const m=$('#cm');if(m){m.innerHTML=msgs();m.scrollTop=m.scrollHeight}}
-function chatUI(){if(!AI)return'';return `<button class="fab" data-act="chat" aria-label="Chat with us">💬 Ask us</button><div class="cp ${chatOpen?'open':''}" id="cp"><div class="ch"><b>🪔 Shyadri Saathi</b><button data-act="chat" aria-label="Close chat">✕</button></div><div class="cm" id="cm">${msgs()}</div><div class="chips">${CHIPS.map(c=>`<button data-act="chip" data-q="${esc(c)}">${esc(c)}</button>`).join('')}</div><div class="crow"><input id="cin" placeholder="Ask about the hotel…" maxlength="400" autocomplete="off"><button class="btn" data-act="send">Send</button></div></div>`}
+function chatUI(){if(!AI)return'';return `<button class="fab" data-act="chat" aria-label="Chat with Saathi">💬 Ask Saathi</button><div class="cp ${chatOpen?'open':''}" id="cp"><div class="ch"><b>🪔 Shyadri Saathi</b><button data-act="chat" aria-label="Close chat">✕</button></div><div class="cm" id="cm">${msgs()}</div><div class="chips">${CHIPS.map(c=>`<button data-act="chip" data-q="${esc(c)}">${esc(c)}</button>`).join('')}</div><div class="crow"><input id="cin" placeholder="Ask about the hotel…" maxlength="400" autocomplete="off"><button class="btn" data-act="send">Send</button></div></div>`}
 function chatToggle(){chatOpen=!chatOpen;const c=$('#cp');if(c)c.classList.toggle('open',chatOpen);if(chatOpen){const i=$('#cin');if(i)setTimeout(()=>i.focus(),300);paint()}}
 
 function smartReply(q){
  const text=q.toLowerCase();
- if(text.includes('wifi')||text.includes('wi-fi')||text.includes('वायफाय')||text.includes('password')||text.includes('इंटरनेट')){
-   return `📶 WiFi Details:\nNetwork: ${S.wifi.name || 'Shyadri_Guest'}\nPassword: ${S.wifi.pass || 'welcome123'}`;
- }
- if(text.includes('rule')||text.includes('नियम')||text.includes('timing')||text.includes('check-out')||text.includes('checkout')){
-   return `📜 House Rules:\n${(S.rules||[]).map((r,idx)=>`${idx+1}. ${r}`).join('\n')}`;
- }
- if(text.includes('veg')||text.includes('शाकाहारी')){
-   const vegDishes=S.menu.flatMap(c=>c.items).filter(i=>i.v&&i.a);
-   const names=vegDishes.map(d=>d.n+(d.p?` (₹${d.p})`:'')).slice(0,6).join(', ');
-   return `🥗 Vegetarian options include: ${names}. You can order directly using the 'Order Food' button!`;
- }
- if(text.includes('non-veg')||text.includes('chicken')||text.includes('fish')||text.includes('मटण')||text.includes('मांसाहारी')){
+ // Check non-veg FIRST to avoid false match with 'veg' inside 'non-veg' or 'nonveg'
+ const isNonVeg = text.includes('non-veg') || text.includes('non veg') || text.includes('nonveg') || 
+                  text.includes('chicken') || text.includes('fish') || text.includes('mutton') || 
+                  text.includes('egg') || text.includes('मांसाहारी') || text.includes('चिकन') || text.includes('मटण') || text.includes('मासे');
+
+ if(isNonVeg){
    const nonVeg=S.menu.flatMap(c=>c.items).filter(i=>!i.v&&i.a);
-   const names=nonVeg.map(d=>d.n+(d.p?` (₹${d.p})`:'')).slice(0,6).join(', ');
-   return `🍗 Non-veg favorites: ${names || 'Available in our menu'}. Check the Menu section to order!`;
+   if(nonVeg.length){
+     const names=nonVeg.map(d=>`• ${d.n}${d.p?` (₹${d.p})`:''}${d.d?` - ${d.d}`:''}`).join('\n');
+     return `🍗 Non-Veg Dishes available:\n${names}\n\nTap "Order Food" to order directly to your room!`;
+   }
+   return `🍗 We have delicious non-veg dishes like Chicken Sukka and Fish Thali on our menu! Tap "Order Food" to explore.`;
  }
+
+ if(text.includes('veg') || text.includes('शाकाहारी') || text.includes('vegetarian')){
+   const vegDishes=S.menu.flatMap(c=>c.items).filter(i=>i.v&&i.a);
+   if(vegDishes.length){
+     const names=vegDishes.map(d=>`• ${d.n}${d.p?` (₹${d.p})`:''}${d.d?` - ${d.d}`:''}`).slice(0,6).join('\n');
+     return `🥗 Pure Veg Options:\n${names}\n\nTap "Order Food" to order!`;
+   }
+   return `🥗 We offer a wide range of vegetarian dishes including Veg Thali, Kothimbir Vadi, and Paneer Butter Masala!`;
+ }
+
+ if(text.includes('wifi')||text.includes('wi-fi')||text.includes('वायफाय')||text.includes('password')||text.includes('इंटरनेट')){
+   return `📶 WiFi Details:\nNetwork: ${S.wifi.name || 'Shyadri_Guest'}\nPassword: ${S.wifi.pass || 'welcome123'}\n\n(You can also tap the WiFi tile on the home screen to copy the password directly!)`;
+ }
+
+ if(text.includes('rule')||text.includes('नियम')||text.includes('timing')||text.includes('check-out')||text.includes('checkout')||text.includes('checkin')||text.includes('check in')){
+   return `📜 House Rules & Timings:\n${(S.rules||[]).map((r,idx)=>`${idx+1}. ${r}`).join('\n')}`;
+ }
+
  if(text.includes('suggest')||text.includes('recommend')||text.includes('special')||text.includes('काय खा')||text.includes('dish')||text.includes('खायचं')){
    const all=S.menu.flatMap(c=>c.items).filter(i=>i.a);
    if(all.length){
      const pick=all[Math.floor(Math.random()*all.length)];
-     return `🍛 How about trying our ${pick.n}${pick.p?` (₹${pick.p})`:''}? ${pick.d || 'A guest favorite!'}`;
+     return `🍛 How about trying our *${pick.n}*${pick.p?` (₹${pick.p})`:''}? ${pick.d || 'A guest favorite!'}\n\nTap "Order Food" to order!`;
    }
  }
- if(text.includes('order')||text.includes('food')||text.includes('ऑर्डर')||text.includes('जेवण')){
-   return `🛎️ You can order food directly to your room! Tap the 'Order Food' button on the screen to choose your dishes and send via WhatsApp.`;
+
+ if(text.includes('order')||text.includes('food')||text.includes('ऑर्डर')||text.includes('जेवण')||text.includes('menu')){
+   return `🛎️ Ready to dine? Tap the "Order Food" button on the screen to browse all categories, customize your order, and send directly via WhatsApp!`;
  }
- if(text.includes('towel')||text.includes('soap')||text.includes('blanket')||text.includes('toiletr')||text.includes('मदत')||text.includes('room service')){
-   return `🧴 Need room amenities? Tap the 'Request' button on the home screen to request towels, soap, extra blankets, or send a message to front desk.`;
+
+ if(text.includes('towel')||text.includes('soap')||text.includes('blanket')||text.includes('pillow')||text.includes('toiletr')||text.includes('shampoo')||text.includes('मदत')||text.includes('room service')||text.includes('amenit')){
+   return `🧴 Need room amenities? Tap the "Request" button on your screen to request fresh towels, extra pillows, blankets, toiletries kit, or send a custom message to the front desk.`;
  }
- if(text.includes('phone')||text.includes('call')||text.includes('contact')||text.includes('reception')||text.includes('नंबर')||text.includes('संपर्क')){
-   return `📞 Reception Phone: ${S.hotel.phone || '+91 8956364864'}. Feel free to contact us anytime!`;
+
+ if(text.includes('phone')||text.includes('call')||text.includes('contact')||text.includes('reception')||text.includes('नंबर')||text.includes('संपर्क')||text.includes('desk')){
+   return `📞 Reception Phone: ${S.hotel.phone || '+91 8956364864'}. We are at your service!`;
  }
+
+ if(text.includes('pool')||text.includes('swimming')||text.includes('hot water')||text.includes('parking')||text.includes('location')||text.includes('near')||text.includes('travel')||text.includes('fort')||text.includes('hotel')||text.includes('facility')||text.includes('facilities')){
+   if(S.hotel.ai_info && S.hotel.ai_info.trim()){
+     return `ℹ️ Hotel Information:\n${S.hotel.ai_info.trim()}`;
+   }
+   return `ℹ️ Hotel ${S.hotel.name} (${S.hotel.tagline || 'Stay · Dine · Relax'}). Hot water and room assistance are available. For specific tour or amenity details, please check with reception${S.hotel.phone ? ' at ' + S.hotel.phone : ''} 🙏`;
+ }
+
  if(text.includes('hi')||text.includes('hello')||text.includes('hey')||text.includes('नमस्कार')||text.includes('namaste')){
-   return `नमस्कार! Welcome to ${S.hotel.name}. How may I help you today? Ask me about WiFi, food menu, rules or room requests.`;
+   return `नमस्कार! Welcome to ${S.hotel.name}. I am Saathi! How can I help you? You can ask me about WiFi, non-veg/veg food options, house rules, or room amenities.`;
  }
- return `I'm here to help with WiFi, food menu, house rules, and amenities. For special assistance, please reach out to reception${S.hotel.phone ? ' at ' + S.hotel.phone : ''} 🙏`;
+
+ if(S.hotel.ai_info && S.hotel.ai_info.trim() && S.hotel.ai_info.toLowerCase().split(/\s+/).some(w=>w.length>3 && text.includes(w))){
+   return `ℹ️ ${S.hotel.ai_info.trim()}`;
+ }
+
+ return `I'm here to assist with WiFi, menu, non-veg/veg dishes, house rules, and amenities. For anything else, reception is always glad to assist${S.hotel.phone ? ' at ' + S.hotel.phone : ''} 🙏`;
 }
 
 async function chatSend(pre){
@@ -195,19 +233,28 @@ async function chatSend(pre){
  busy=true;
  paint();
  
+ const startTime = Date.now();
+ let replyText = '';
+
  let h=chat.slice(0,-1).filter(m=>m.content).slice(-10);
  while(h.length&&h[0].role!=='user')h.shift();
 
  try{
    const {data,error}=await SB.functions.invoke('ai-chat',{body:{messages:h}});
    if(error||!data||!data.reply)throw error||new Error('Edge function unavailable');
-   chat[chat.length-1].content=data.reply;
+   replyText=data.reply;
  }catch(e){
-   // Smart Instant Knowledge Fallback
-   chat[chat.length-1].content=smartReply(v);
+   replyText=smartReply(v);
  }
- busy=false;
- paint();
+
+ // Realistic 1-second natural thinking/typing delay
+ const elapsed = Date.now() - startTime;
+ const delay = Math.max(0, 1000 - elapsed);
+ setTimeout(()=>{
+   chat[chat.length-1].content=replyText;
+   busy=false;
+   paint();
+ }, delay);
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='cin')chatSend()});
 let ord={open:false,view:'browse',tab:'toil',cart:{},msg:'',name:'',room:'',note:'',sent:'',sentTab:'',err:''};
