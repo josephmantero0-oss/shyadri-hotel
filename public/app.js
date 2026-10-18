@@ -154,74 +154,141 @@ function chatUI(){if(!AI)return'';return `<button class="fab" data-act="chat" ar
 function chatToggle(){chatOpen=!chatOpen;const c=$('#cp');if(c)c.classList.toggle('open',chatOpen);if(chatOpen){const i=$('#cin');if(i)setTimeout(()=>i.focus(),300);paint()}}
 
 function smartReply(q){
- const text=q.toLowerCase();
- // Check non-veg FIRST to avoid false match with 'veg' inside 'non-veg' or 'nonveg'
+ const text = q.toLowerCase().trim();
+ const allCategories = S.menu || [];
+ const allItems = allCategories.flatMap(c => (c.items || []).map(it => ({ ...it, category: c.cat })));
+ const activeItems = allItems.filter(it => it.a);
+
+ // 1. Check for specific Category matches (e.g., drinks, snacks, breakfast, beverages, meals, thali, desserts)
+ const matchedCat = allCategories.find(c => {
+   const cName = (c.cat || '').toLowerCase();
+   return text.includes(cName) || 
+          (cName.includes('drink') && (text.includes('drink') || text.includes('beverage') || text.includes('चहा') || text.includes('tea') || text.includes('coffee') || text.includes('पेये'))) ||
+          (cName.includes('snack') && (text.includes('snack') || text.includes('नाश्ता') || text.includes('starters') || text.includes('starter'))) ||
+          (cName.includes('meal') && (text.includes('meal') || text.includes('thali') || text.includes('थाळी') || text.includes('lunch') || text.includes('dinner')));
+ });
+
+ if(matchedCat){
+   const items = (matchedCat.items || []).filter(i => i.a);
+   if(items.length){
+     const list = items.map(d => `• ${d.n}${d.p ? ` (₹${d.p})` : ''}${d.d ? ` - ${d.d}` : ''}${d.v ? ' [Veg]' : ' [Non-Veg]'}`).join('\n');
+     return `📋 ${matchedCat.cat} Menu:\n${list}\n\nTap "Order Food" to order directly to your room!`;
+   }
+   return `Our ${matchedCat.cat} section is currently being updated. Tap "Order Food" to view available dishes!`;
+ }
+
+ // 2. Check for specific Dish name search (e.g. "Do you have misal pav?", "Price of chicken sukka", "chai")
+ const matchedDish = allItems.find(it => {
+   const dName = (it.n || '').toLowerCase();
+   return dName.length > 2 && text.includes(dName);
+ });
+
+ if(matchedDish){
+   const status = matchedDish.a ? (matchedDish.p ? `priced at ₹${matchedDish.p}` : 'available') : 'currently sold out';
+   const vegTag = matchedDish.v ? 'Pure Veg' : 'Non-Veg';
+   const desc = matchedDish.d ? ` (${matchedDish.d})` : '';
+   return `🍽️ *${matchedDish.n}* [${vegTag}]:\nIt is ${status}${desc} under our ${matchedDish.category} menu.${matchedDish.a ? ' You can order it right now from the "Order Food" screen!' : ''}`;
+ }
+
+ // 3. NON-VEG queries (evaluated before veg to avoid substring collision)
  const isNonVeg = text.includes('non-veg') || text.includes('non veg') || text.includes('nonveg') || 
                   text.includes('chicken') || text.includes('fish') || text.includes('mutton') || 
                   text.includes('egg') || text.includes('मांसाहारी') || text.includes('चिकन') || text.includes('मटण') || text.includes('मासे');
 
  if(isNonVeg){
-   const nonVeg=S.menu.flatMap(c=>c.items).filter(i=>!i.v&&i.a);
+   const nonVeg = activeItems.filter(i => !i.v);
    if(nonVeg.length){
-     const names=nonVeg.map(d=>`• ${d.n}${d.p?` (₹${d.p})`:''}${d.d?` - ${d.d}`:''}`).join('\n');
-     return `🍗 Non-Veg Dishes available:\n${names}\n\nTap "Order Food" to order directly to your room!`;
+     const names = nonVeg.map(d => `• ${d.n}${d.p ? ` (₹${d.p})` : ''}${d.d ? ` - ${d.d}` : ''} [${d.category}]`).join('\n');
+     return `🍗 Non-Veg Dishes available:\n${names}\n\nTap "Order Food" to order to your room!`;
    }
-   return `🍗 We have delicious non-veg dishes like Chicken Sukka and Fish Thali on our menu! Tap "Order Food" to explore.`;
+   return `Currently there are no active non-veg items listed on the menu. Please check with reception!`;
  }
 
+ // 4. PURE VEG queries
  if(text.includes('veg') || text.includes('शाकाहारी') || text.includes('vegetarian')){
-   const vegDishes=S.menu.flatMap(c=>c.items).filter(i=>i.v&&i.a);
+   const vegDishes = activeItems.filter(i => i.v);
    if(vegDishes.length){
-     const names=vegDishes.map(d=>`• ${d.n}${d.p?` (₹${d.p})`:''}${d.d?` - ${d.d}`:''}`).slice(0,6).join('\n');
-     return `🥗 Pure Veg Options:\n${names}\n\nTap "Order Food" to order!`;
+     const names = vegDishes.map(d => `• ${d.n}${d.p ? ` (₹${d.p})` : ''}${d.d ? ` - ${d.d}` : ''} [${d.category}]`).slice(0, 8).join('\n');
+     return `🥗 Pure Veg Options:\n${names}\n\nTap "Order Food" to view the full menu and order!`;
    }
-   return `🥗 We offer a wide range of vegetarian dishes including Veg Thali, Kothimbir Vadi, and Paneer Butter Masala!`;
+   return `Our kitchen offers delicious pure vegetarian meals. Tap "Order Food" to view the menu!`;
  }
 
- if(text.includes('wifi')||text.includes('wi-fi')||text.includes('वायफाय')||text.includes('password')||text.includes('इंटरनेट')){
-   return `📶 WiFi Details:\nNetwork: ${S.wifi.name || 'Shyadri_Guest'}\nPassword: ${S.wifi.pass || 'welcome123'}\n\n(You can also tap the WiFi tile on the home screen to copy the password directly!)`;
+ // 5. WiFi queries
+ if(text.includes('wifi') || text.includes('wi-fi') || text.includes('वायफाय') || text.includes('password') || text.includes('पासवर्ड') || text.includes('internet') || text.includes('इंटरनेट')){
+   return `📶 WiFi Details:\nNetwork: ${S.wifi.name || 'Not set'}\nPassword: ${S.wifi.pass || 'Not set'}\n\n(You can also tap the WiFi tile on the home screen to copy it with one tap!)`;
  }
 
- if(text.includes('rule')||text.includes('नियम')||text.includes('timing')||text.includes('check-out')||text.includes('checkout')||text.includes('checkin')||text.includes('check in')){
-   return `📜 House Rules & Timings:\n${(S.rules||[]).map((r,idx)=>`${idx+1}. ${r}`).join('\n')}`;
+ // 6. House rules & timings
+ if(text.includes('rule') || text.includes('नियम') || text.includes('timing') || text.includes('time') || text.includes('check-out') || text.includes('checkout') || text.includes('checkin') || text.includes('check in')){
+   const rules = (S.rules || []).filter(Boolean);
+   if(rules.length){
+     return `📜 House Rules & Timings:\n${rules.map((r, idx) => `${idx + 1}. ${r}`).join('\n')}`;
+   }
+   return `Please observe our standard quiet hours and check-out times. Feel free to contact reception for assistance!`;
  }
 
- if(text.includes('suggest')||text.includes('recommend')||text.includes('special')||text.includes('काय खा')||text.includes('dish')||text.includes('खायचं')){
-   const all=S.menu.flatMap(c=>c.items).filter(i=>i.a);
-   if(all.length){
-     const pick=all[Math.floor(Math.random()*all.length)];
-     return `🍛 How about trying our *${pick.n}*${pick.p?` (₹${pick.p})`:''}? ${pick.d || 'A guest favorite!'}\n\nTap "Order Food" to order!`;
+ // 7. Notices & Announcements from Front Desk
+ if(text.includes('notice') || text.includes('announcement') || text.includes('update') || text.includes('सूचना')){
+   const notices = (S.notices || []).filter(n => n.t);
+   if(notices.length){
+     return `📢 Front Desk Notices:\n${notices.map(n => `• ${n.t} (${n.time || ''})`).join('\n')}`;
+   }
+   return `There are no urgent notices at the moment. Everything is operating normally!`;
+ }
+
+ // 8. Dish Suggestion / "What should I eat?"
+ if(text.includes('suggest') || text.includes('recommend') || text.includes('special') || text.includes('काय खा') || text.includes('dish') || text.includes('खायचं') || text.includes('best')){
+   if(activeItems.length){
+     const pick = activeItems[Math.floor(Math.random() * activeItems.length)];
+     return `🍛 How about trying our *${pick.n}* (${pick.category}) for ₹${pick.p || 'N/A'}? ${pick.d || 'A favorite among our guests!'}\n\nTap "Order Food" to order!`;
    }
  }
 
- if(text.includes('order')||text.includes('food')||text.includes('ऑर्डर')||text.includes('जेवण')||text.includes('menu')){
-   return `🛎️ Ready to dine? Tap the "Order Food" button on the screen to browse all categories, customize your order, and send directly via WhatsApp!`;
+ // 9. Food Ordering
+ if(text.includes('order') || text.includes('food') || text.includes('ऑर्डर') || text.includes('जेवण') || text.includes('menu') || text.includes('किचन') || text.includes('kitchen')){
+   return `🛎️ Ready to order? Tap the "Order Food" button on your screen to browse our full live menu, pick your favorite items, and send the order directly via WhatsApp!`;
  }
 
- if(text.includes('towel')||text.includes('soap')||text.includes('blanket')||text.includes('pillow')||text.includes('toiletr')||text.includes('shampoo')||text.includes('मदत')||text.includes('room service')||text.includes('amenit')){
-   return `🧴 Need room amenities? Tap the "Request" button on your screen to request fresh towels, extra pillows, blankets, toiletries kit, or send a custom message to the front desk.`;
+ // 10. Toiletries & Room amenities
+ if(text.includes('towel') || text.includes('soap') || text.includes('blanket') || text.includes('pillow') || text.includes('toiletr') || text.includes('shampoo') || text.includes('मदत') || text.includes('room service') || text.includes('amenit') || text.includes('kit') || text.includes('brush') || text.includes('paste')){
+   const toil = (S.toil || []).filter(t => t.a && t.n).map(t => t.n).join(', ');
+   return `🧴 Available room amenities:\n${toil || 'Fresh towels, toiletries, blankets, etc.'}\n\nTap the "Request" button on your screen to send a request directly to our front desk!`;
  }
 
- if(text.includes('phone')||text.includes('call')||text.includes('contact')||text.includes('reception')||text.includes('नंबर')||text.includes('संपर्क')||text.includes('desk')){
-   return `📞 Reception Phone: ${S.hotel.phone || '+91 8956364864'}. We are at your service!`;
+ // 11. Reception / Contact details
+ if(text.includes('phone') || text.includes('call') || text.includes('contact') || text.includes('reception') || text.includes('नंबर') || text.includes('संपर्क') || text.includes('desk') || text.includes('front desk')){
+   return `📞 Front Desk Contact:\nPhone: ${S.hotel.phone || 'Available at reception'}\nHotel: ${S.hotel.name} (${S.hotel.tagline || ''})\n\nFeel free to call or visit us for any assistance!`;
  }
 
- if(text.includes('pool')||text.includes('swimming')||text.includes('hot water')||text.includes('parking')||text.includes('location')||text.includes('near')||text.includes('travel')||text.includes('fort')||text.includes('hotel')||text.includes('facility')||text.includes('facilities')){
-   if(S.hotel.ai_info && S.hotel.ai_info.trim()){
-     return `ℹ️ Hotel Information:\n${S.hotel.ai_info.trim()}`;
+ // 12. Dynamic Hotel Info & Custom Knowledge (from Admin -> Info -> Extra Hotel & Local Info)
+ if(S.hotel.ai_info && S.hotel.ai_info.trim()){
+   const info = S.hotel.ai_info.trim();
+   // Check if query matches any keywords in the custom info
+   const words = text.split(/[\s,?.!]+/).filter(w => w.length > 2);
+   const infoLower = info.toLowerCase();
+   const hasMatch = words.some(w => infoLower.includes(w));
+   
+   if(hasMatch || text.includes('hotel') || text.includes('about') || text.includes('facility') || text.includes('facilities') || text.includes('pool') || text.includes('swimming') || text.includes('water') || text.includes('tour') || text.includes('place') || text.includes('near') || text.includes('location')){
+     return `ℹ️ About ${S.hotel.name}:\n${info}`;
    }
-   return `ℹ️ Hotel ${S.hotel.name} (${S.hotel.tagline || 'Stay · Dine · Relax'}). Hot water and room assistance are available. For specific tour or amenity details, please check with reception${S.hotel.phone ? ' at ' + S.hotel.phone : ''} 🙏`;
  }
 
- if(text.includes('hi')||text.includes('hello')||text.includes('hey')||text.includes('नमस्कार')||text.includes('namaste')){
-   return `नमस्कार! Welcome to ${S.hotel.name}. I am Saathi! How can I help you? You can ask me about WiFi, non-veg/veg food options, house rules, or room amenities.`;
+ // 13. Friendly Greetings
+ if(text.includes('hi') || text.includes('hello') || text.includes('hey') || text.includes('नमस्कार') || text.includes('namaste') || text.includes('good morning') || text.includes('good evening')){
+   return `नमस्कार! Welcome to ${S.hotel.name}. I am Saathi, your 24/7 digital concierge.\n\nYou can ask me about our food menu, drinks, WiFi password, house rules, or request room amenities!`;
  }
 
- if(S.hotel.ai_info && S.hotel.ai_info.trim() && S.hotel.ai_info.toLowerCase().split(/\s+/).some(w=>w.length>3 && text.includes(w))){
-   return `ℹ️ ${S.hotel.ai_info.trim()}`;
- }
+ // 14. Smart Fallback with live context
+ const summary = [
+   allCategories.length ? `• Food & Drinks (${allCategories.map(c => c.cat).join(', ')})` : '',
+   S.wifi.name ? `• WiFi details` : '',
+   (S.rules || []).length ? `• House rules` : '',
+   (S.toil || []).length ? `• Room amenities & requests` : '',
+   S.hotel.phone ? `• Reception: ${S.hotel.phone}` : ''
+ ].filter(Boolean).join('\n');
 
- return `I'm here to assist with WiFi, menu, non-veg/veg dishes, house rules, and amenities. For anything else, reception is always glad to assist${S.hotel.phone ? ' at ' + S.hotel.phone : ''} 🙏`;
+ return `I'm happy to help! You can ask me about:\n${summary}\n\nOr feel free to call our front desk${S.hotel.phone ? ` at ${S.hotel.phone}` : ''} 🙏`;
 }
 
 async function chatSend(pre){
