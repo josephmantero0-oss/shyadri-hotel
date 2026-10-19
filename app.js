@@ -218,10 +218,45 @@ function owl(){
   const c=$('#car');
   if(c){c.classList.add('fast');setTimeout(()=>c.classList.remove('fast'),2200)}
   const meal = getMealContext();
-  const tips = TIME_SUGGESTIONS[meal] || TIME_SUGGESTIONS.lunch;
-  const tip = tips[ti++ % tips.length];
+  const quotes = TIME_SUGGESTIONS[meal] || TIME_SUGGESTIONS.lunch;
+  
+  const all = S.menu.flatMap(cat => (cat.items||[]).map(i=>({...i, category:cat.cat}))).filter(i => i.a && (!vegOnly || i.v));
+  const pool = getMealItems(meal, all).filter(i => i.a && (!vegOnly || i.v));
+  const foodItems = pool.length ? pool : all;
+  
+  const foodieSuggestions = foodItems.map(it => {
+    const pStr = it.p ? ` (₹${it.p})` : '';
+    const descStr = it.d ? ` - ${it.d}` : '';
+    const templates = [
+      `आज काय खायचं? Try our *${it.n}*${pStr}! 🤤`,
+      `Chef's special for right now: *${it.n}*${pStr}${descStr} 🍛`,
+      `How about fresh hot *${it.n}*${pStr}? Tap Order Food to order! 🛎️`,
+      `Hotel Shyadri favorite: *${it.n}*! Cooked fresh to order 👨‍🍳`,
+      `Treat yourself: *${it.n}*${pStr} delivered right to your room 🛌🍽️`
+    ];
+    return templates[Math.floor(Math.random() * templates.length)];
+  });
+
+  const hotelTips = [
+    'Tap the WiFi tile on your screen, the password is ready 📶',
+    'Want food delivered to your room? Tap "Order Food" to send order on WhatsApp 🛎️',
+    'House rules and checkout timings are just below 📜',
+    'Enjoyed your stay with us? A quick Google review means a lot ⭐',
+    'Tap again for more chef tips & food suggestions! 🍛'
+  ];
+
+  const combined = [];
+  const maxLen = Math.max(quotes.length, foodieSuggestions.length, hotelTips.length);
+  for(let idx = 0; idx < maxLen; idx++){
+    if(quotes[idx % quotes.length]) combined.push(quotes[idx % quotes.length]);
+    if(foodieSuggestions[idx % foodieSuggestions.length]) combined.push(foodieSuggestions[idx % foodieSuggestions.length]);
+    if(hotelTips[idx % hotelTips.length]) combined.push(hotelTips[idx % hotelTips.length]);
+  }
+
+  const finalPool = combined.length ? combined : quotes;
+  const tip = finalPool[ti++ % finalPool.length];
   say(tip);
-  boom($('.sunc'));
+  boom($('.sunc') || $('#hero'));
 }
 function boom(el){const r=(el||document.body).getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,c=['#f0b23e','#fff7ea','#86e0a3','#ffd2c2','#2a140b'];for(let i=0;i<22;i++){const d=document.createElement('i');d.className='cf';d.style.cssText=`left:${x}px;top:${y}px;background:${c[i%5]};--dx:${(Math.random()-.5)*260}px;--dy:${-80-Math.random()*160}px;--r:${Math.random()*720}deg`;document.body.appendChild(d);setTimeout(()=>d.remove(),1100)}}
 function pick(t){
