@@ -28,22 +28,40 @@ function menuBlock(){
  const items=src.filter(it=>(!vegOnly||it.v)&&(!n||(it.n+' '+it.d).toLowerCase().includes(n))).map(it=>`<div class="it ${it.a?'':'off'}"><span class="vd ${it.v?'v':'n'}"></span><div class="im"><b>${esc(it.n)}</b><small>${esc(it.d)}</small></div><div class="pr">${it.a?'₹'+esc(it.p):'Sold out'}</div></div>`).join('')||'<p class="mu">No dishes match.</p>';
  return (q?'':`<div class="pills sticky">${S.menu.map((x,i)=>`<button class="pill ${i===mcat?'on':''}" data-act="cat" data-i="${i}">${esc(x.cat)}</button>`).join('')}</div>`)+items;
 }
+const OWL=`<svg id="owl" viewBox="0 0 120 132" width="120" height="132" role="img" aria-label="Deck the bellhop owl"><g class="wing wl"><ellipse cx="18" cy="84" rx="11" ry="24" fill="#b8763a" stroke="#2b2118" stroke-width="3"/></g><g class="wing wr"><ellipse cx="102" cy="84" rx="11" ry="24" fill="#b8763a" stroke="#2b2118" stroke-width="3"/></g><ellipse cx="60" cy="80" rx="42" ry="44" fill="#c98a4b" stroke="#2b2118" stroke-width="3"/><ellipse cx="60" cy="94" rx="26" ry="28" fill="#ffe2b0"/><path d="M24 52 L18 24 L48 40Z M96 52 L102 24 L72 40Z" fill="#c98a4b" stroke="#2b2118" stroke-width="3" stroke-linejoin="round"/><g class="eyes"><circle cx="44" cy="62" r="15" fill="#fff" stroke="#2b2118" stroke-width="3"/><circle cx="76" cy="62" r="15" fill="#fff" stroke="#2b2118" stroke-width="3"/><circle class="pup" cx="44" cy="62" r="6.5" fill="#2b2118"/><circle class="pup" cx="76" cy="62" r="6.5" fill="#2b2118"/></g><path d="M53 75 L67 75 L60 88Z" fill="#ff9f1c" stroke="#2b2118" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="78" r="6" fill="#ff8fab" opacity=".7"/><circle cx="90" cy="78" r="6" fill="#ff8fab" opacity=".7"/><path d="M36 40 Q60 12 84 40Z" fill="#e4553a" stroke="#2b2118" stroke-width="3" stroke-linejoin="round"/><circle cx="60" cy="22" r="5" fill="#ffb938" stroke="#2b2118" stroke-width="2.5"/><path d="M44 122 v8 M52 122 v8 M68 122 v8 M76 122 v8" stroke="#ff9f1c" stroke-width="4" stroke-linecap="round"/></svg>`;
+
+function skyInfo(){
+  const d=new Date(),h=d.getHours()+d.getMinutes()/60,n=h<6||h>=19,t=Math.min(1,Math.max(0,(h-6)/13));
+  return {
+    n,
+    c: n ? ['#1d2b64','#6a4c93'] : h<11 ? ['#ffd6a5','#ffb3c1'] : h<17 ? ['#8fd3fe','#e3f6ff'] : ['#ff9a76','#ffd89b'],
+    l: n ? 72 : 10+t*78,
+    t: n ? 14 : 62-Math.sin(t*Math.PI)*48
+  };
+}
+
 function guest(){
- const ph=String(S.hotel.phone).replace(/[^+\d]/g,''),rv=url(S.review),H=hi();
+ const k=skyInfo(),ph=String(S.hotel.phone).replace(/[^+\d]/g,''),rv=url(S.review),H=hi();
  const nt=S.notices.slice().reverse().map(n=>`<div class="card note rv"><b>From the front desk</b><p style="margin:4px 0">${esc(n.t)}</p><small>${esc(n.time)}</small></div>`).join('');
  return `<div class="adm"><button data-act="login">Admin</button></div><div class="wrap">
- <header class="hero" id="hero"><svg class="mnt" viewBox="0 0 420 170" preserveAspectRatio="none"><path class="m3" d="M0 170V70l45-35 40 40 50-55 55 60 40-30 60 50 45-35 85 55v70z"/><path class="m2" d="M0 170V105l60-40 45 40 70-50 70 60 60-40 115 50v45z"/><path class="m1" d="M0 170v-35l70-40 55 35 65-30 80 45 60-35 90 45v15z"/></svg>
- <div class="scene" data-act="owl"><div class="tilt"><div class="sunc"></div><div class="car" id="car">${Array.from({length:10},(_,i)=>dancer(i)).join('')}</div></div></div>
- <p class="namaste">${H[0]}</p><h1>${esc(S.hotel.name)}</h1><p class="sub">${esc(S.hotel.tagline)}</p><p class="say" id="say">${esc(H[1])}</p></header>
- <div class="zig"></div>
+ <div class="sky ${k.n?'night':''}" id="sky" data-act="owl" style="--s1:${k.c[0]};--s2:${k.c[1]}">${k.n?'<i class="stars"></i>':''}<i class="orb" style="left:${k.l}%;top:${k.t}%;">${k.n?'🌙':'☀️'}</i><i class="cloud"></i><i class="cloud c2"></i><i class="hill h1"></i><i class="hill h2"></i><div class="bubble pop" id="say" data-act="owl">${esc(H[1])}</div><button class="owlb" data-act="owl" aria-label="Tap Deck the owl">${OWL}</button><div class="rail"></div></div>
+ <header class="hero"><h1>${esc(S.hotel.name)}</h1><span class="tag">${esc(S.hotel.tagline)}</span></header>
  ${nt}
- <nav class="qa rv"><button class="tile" data-act="food"><i>🍛</i>Order Food<small>जेवण ऑर्डर</small></button><button class="tile" data-act="order"><i>🧴</i>Request<small>मदत</small></button><button class="tile" data-act="go" data-t="wifi"><i>📶</i>WiFi<small>वायफाय</small></button><button class="tile" data-act="go" data-t="menu"><i>🍛</i>Menu<small>जेवण</small></button><button class="tile" data-act="go" data-t="rules"><i>📜</i>Rules<small>नियम</small></button>${rv?`<a class="tile" href="${esc(rv)}" target="_blank" rel="noopener"><i>⭐</i>Review<small>अभिप्राय</small></a>`:''}${ph?`<a class="tile" href="tel:${ph}"><i>📞</i>Call us<small>संपर्क</small></a>`:''}</nav>
+ <nav class="qa rv">
+   <button class="tile" style="--c:#ffd2c2" data-act="food"><i>🍛</i>Order Food<small>जेवण ऑर्डर</small></button>
+   <button class="tile" style="--c:#dcd0ff" data-act="order"><i>🧴</i>Request<small>मदत</small></button>
+   <button class="tile" style="--c:#b8f0e6" data-act="go" data-t="wifi"><i>📶</i>WiFi<small>वायफाय</small></button>
+   <button class="tile" style="--c:#ffe08a" data-act="go" data-t="menu"><i>🍽️</i>Menu<small>जेवण</small></button>
+   <button class="tile" style="--c:#c9f0c0" data-act="go" data-t="rules"><i>📜</i>Rules<small>नियम</small></button>
+   ${rv?`<a class="tile" style="--c:#ffc4b5" href="${esc(rv)}" target="_blank" rel="noopener"><i>⭐</i>Review<small>अभिप्राय</small></a>`:''}
+   ${ph?`<a class="tile" style="--c:#c9f0c0" href="tel:${ph}"><i>📞</i>Call us<small>संपर्क</small></a>`:''}
+ </nav>
  <section class="card rv" id="wifi"><h2>📶 WiFi</h2><div class="kv"><span class="mu">Network</span><b>${esc(S.wifi.name)}</b></div><div class="kv"><span class="mu">Password</span><b>${esc(S.wifi.pass)}</b></div><div class="bar" style="margin:10px 0 0"><button class="btn" data-act="copy" data-v="${esc(S.wifi.pass)}">Copy password</button><button class="btn g" data-act="copy" data-v="${esc(S.wifi.name)}">Copy name</button></div></section>
- <section class="card rv" id="menu"><h2>🍛 Menu</h2><div class="tools"><input id="q" type="search" placeholder="Search dishes…" value="${esc(q)}"><label class="sw"><input type="checkbox" id="vg" ${vegOnly?'checked':''}>Veg only</label></div><div class="bar" style="justify-content:flex-start;gap:10px"><button class="btn" data-act="food">🛎️ Order food</button><button class="btn g" data-act="pick">आज काय खायचं? 🍛</button></div><div id="pick"></div><div id="mm">${menuBlock()}</div><button class="btn" style="width:100%;margin-top:16px" data-act="food">🛎️ Order food to your room</button></section>
+ <section class="card rv" id="menu"><h2>🍽️ Menu</h2><div class="tools"><input id="q" type="search" placeholder="Search dishes…" value="${esc(q)}"><label class="sw"><input type="checkbox" id="vg" ${vegOnly?'checked':''}>Veg only</label></div><div class="bar" style="justify-content:flex-start;gap:10px"><button class="btn" data-act="food">🛎️ Order food</button><button class="btn g" data-act="pick">आज काय खायचं? 🍛</button></div><div id="pick"></div><div id="mm">${menuBlock()}</div><button class="btn" style="width:100%;margin-top:16px" data-act="food">🛎️ Order food to your room</button></section>
  <section class="card rv" id="rules"><h2>📜 House rules</h2><ol>${S.rules.map(r=>`<li>${esc(r)}</li>`).join('')}</ol></section>
- ${rv?`<section class="card rv" id="review"><h2>Enjoyed your stay? 🧡</h2><p style="margin-top:0">A quick Google review means a lot to us.</p><a class="btn" href="${esc(rv)}" target="_blank" rel="noopener">⭐ Leave a review</a></section>`:''}
- <div class="zig"></div><p class="foot">धन्यवाद! Thank you for staying with ${esc(S.hotel.name)}</p></div>
- <nav class="dock"><button data-act="go" data-t="top"><i>🏠</i>Home</button><button data-act="go" data-t="menu"><i>🍛</i>Menu</button><button data-act="food"><i>🛎️</i>Order</button><button data-act="go" data-t="wifi"><i>📶</i>WiFi</button><button data-act="go" data-t="rules"><i>📜</i>Rules</button></nav>
+ ${rv?`<section class="card rv" id="review" style="background:#ffe9e2"><h2>Loved your stay? 🧡</h2><p style="margin-top:0">A quick Google review means a lot to our team!</p><a class="btn" href="${esc(rv)}" target="_blank" rel="noopener">⭐ Leave a review</a></section>`:''}
+ <p class="foot">Hoot hoot! Thanks for staying with ${esc(S.hotel.name)} 🦉</p></div>
+ <nav class="dock"><button data-act="go" data-t="top"><i>🏠</i>Home</button><button data-act="go" data-t="menu"><i>🍽️</i>Menu</button><button data-act="food"><i>🛎️</i>Order</button><button data-act="go" data-t="wifi"><i>📶</i>WiFi</button><button data-act="go" data-t="rules"><i>📜</i>Rules</button></nav>
  ${foodPage()}${orderUI()}${chatUI()}${login?loginModal():''}`;
 }
 function inp(k,v,ph,cls){return `<input ${cls?`class="${cls}" `:''}data-k="${k}" value="${esc(v)}" placeholder="${ph}">`}
@@ -215,8 +233,8 @@ const hi=()=>{const h=new Date().getHours();return h<5||h>=21?['शुभ रा
 const TIPS=['Tap the WiFi tile, the password is ready 📶','आज काय खायचं? Ask us on the menu 🍛','House rules are just below 📜','Enjoyed your stay? A review means a lot ⭐','Tap again for more tips!'];let ti=0;
 function say(m){const b=$('#say');if(!b)return;b.textContent=m;b.style.animation='none';void b.offsetWidth;b.style.animation=''}
 function owl(){
-  const c=$('#car');
-  if(c){c.classList.add('fast');setTimeout(()=>c.classList.remove('fast'),2200)}
+  const o=$('#owl');
+  if(o){o.classList.remove('hop');void o.getBoundingClientRect();o.classList.add('hop')}
   const meal = getMealContext();
   const quotes = TIME_SUGGESTIONS[meal] || TIME_SUGGESTIONS.lunch;
   
@@ -592,7 +610,7 @@ function sendOrder(kind,tab){ord.err=validate(tab);const e=$(tab==='food'?'#ferr
  const a=document.createElement('a');a.href=u;if(kind==='wa'){a.target='_blank';a.rel='noopener'}document.body.appendChild(a);a.click();a.remove();
  if(tab==='food'){fp.view='sent';fp.sent=kind;paintFood()}else{ord.sent=kind;ord.sentTab=tab;paintOrder()}boom($(tab==='food'?'#fpage':'#osheet'))}
 document.addEventListener('input',e=>{const i=e.target.id,v=e.target.value;if(i==='on'||i==='fn')ord.name=v;else if(i==='or'||i==='fr')ord.room=v;else if(i==='ox'||i==='fx')ord.note=v;else if(i==='omsg'){ord.msg=v;const f=$('#ofw');if(f)f.innerHTML=obar()}else if(i==='fs'){fp.q=v;const l=$('#flist');if(l)l.innerHTML=fList()}else if(i==='fv'){fp.veg=e.target.checked;const l=$('#flist');if(l)l.innerHTML=fList()}});
-document.addEventListener('pointermove',e=>{const h=$('#hero');if(!h)return;const r=h.getBoundingClientRect();h.style.setProperty('--px',Math.max(-.5,Math.min(.5,(e.clientX-r.left)/r.width-.5)).toFixed(3))});
+document.addEventListener('pointermove',e=>{const sk=$('#sky'),o=$('#owl');if(!sk||!o)return;const r=sk.getBoundingClientRect();sk.style.setProperty('--px',((e.clientX-r.left)/r.width-.5).toFixed(3));sk.style.setProperty('--py',((e.clientY-r.top)/r.height-.5).toFixed(3));const b=o.getBoundingClientRect(),dx=e.clientX-(b.left+b.width/2),dy=e.clientY-(b.top+b.height/2),d=Math.hypot(dx,dy)||1,k=Math.min(5,d/40);o.querySelectorAll('.pup').forEach(p=>p.style.transform=`translate(${dx/d*k}px,${dy/d*k}px)`)});
 
 const CFG=window.APP_CONFIG||{};
 const SB=(window.supabase&&CFG.SUPABASE_URL&&CFG.SUPABASE_ANON_KEY&&!/PASTE_/.test(CFG.SUPABASE_ANON_KEY))?window.supabase.createClient(CFG.SUPABASE_URL,CFG.SUPABASE_ANON_KEY):null;
