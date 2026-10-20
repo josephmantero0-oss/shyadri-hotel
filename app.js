@@ -74,17 +74,17 @@ function guest(){
 function inp(k,v,ph,cls){return `<input ${cls?`class="${cls}" `:''}data-k="${k}" value="${esc(v)}" placeholder="${ph}">`}
 function adminView(){
  let b='';
- const kActive = liveOrders.filter(o=>(!o.type||o.type==='restaurant:shyadri')&&o.status!=='delivered'&&o.status!=='rejected').length;
- const sActive = liveOrders.filter(o=>(o.type==='hotel:shyadri')&&o.status!=='completed').length;
+ const kActive = liveOrders.filter(o=>(!o.type||o.type==='restaurant:shyadri'||o.type==='restaurant')&&o.status!=='delivered'&&o.status!=='rejected').length;
+ const sActive = liveOrders.filter(o=>(o.type==='hotel:shyadri'||o.type==='hotel')&&o.status!=='completed').length;
 
  if(tab==='kitchen'){
    const rList = liveOrders.filter(o=>{
-     const match = (!o.type || o.type==='restaurant:shyadri');
+     const match = (!o.type || o.type==='restaurant:shyadri' || o.type==='restaurant');
      if(!match) return false;
      return kitchenFilter==='active' ? (o.status!=='delivered'&&o.status!=='rejected') : (o.status==='delivered'||o.status==='rejected');
    });
-   const actCount = liveOrders.filter(o=>(!o.type||o.type==='restaurant:shyadri')&&o.status!=='delivered'&&o.status!=='rejected').length;
-   const histCount = liveOrders.filter(o=>(!o.type||o.type==='restaurant:shyadri')&&(o.status==='delivered'||o.status==='rejected')).length;
+   const actCount = liveOrders.filter(o=>(!o.type||o.type==='restaurant:shyadri'||o.type==='restaurant')&&o.status!=='delivered'&&o.status!=='rejected').length;
+   const histCount = liveOrders.filter(o=>(!o.type||o.type==='restaurant:shyadri'||o.type==='restaurant')&&(o.status==='delivered'||o.status==='rejected')).length;
 
    b = `<div class="card" style="margin-top:14px">
      <div class="dtopbar">
@@ -137,7 +137,7 @@ function adminView(){
  }
 
  if(tab==='staff'){
-   const sList = liveOrders.filter(o=>o.type==='hotel:shyadri'&&o.status!=='completed');
+   const sList = liveOrders.filter(o=>(o.type==='hotel:shyadri'||o.type==='hotel')&&o.status!=='completed');
    b = `<div class="card" style="margin-top:14px">
      <div class="dtopbar">
        <div class="dpulse"><i></i><b>FRONT DESK SERVICE REQUESTS</b></div>
@@ -721,7 +721,7 @@ async function chatSend(pre){
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='cin')chatSend()});
 let adminTab='kitchen',kitchenFilter='active',liveOrders=[],soundEnabled=true,lastKnownOrderIds=new Set();
 function playChime(){
-  if(!soundEnabled)return;
+  if(!soundEnabled || !admin)return;
   try{
     const A=window.AudioContext||window.webkitAudioContext;if(!A)return;
     const c=new A(),o=c.createOscillator(),g=c.createGain();
@@ -843,11 +843,51 @@ function fail(t,m){
  document.getElementById('app').innerHTML='<div class="wrap"><div class="card"><h2>'+esc(t)+'</h2><p>'+esc(m)+'</p></div></div>';
 }
 
+
+function fetchLiveOrders(){
+  if(!SB) return;
+  SB.from('orders')
+    .select('*')
+    .in('type', ['restaurant:shyadri', 'hotel:shyadri', 'restaurant', 'hotel'])
+    .order('created_at', { ascending: false })
+    .limit(100)
+    .then(({data, error}) => {
+      if(error || !data) return;
+      let hasNew = false;
+      data.forEach(o => {
+        if(!lastKnownOrderIds.has(o.id)){
+          if(lastKnownOrderIds.size > 0 && o.status === 'pending') hasNew = true;
+          lastKnownOrderIds.add(o.id);
+        }
+      });
+      liveOrders = data;
+      if(hasNew && admin && soundEnabled) {
+        playChime();
+      }
+      if(admin){
+        if(tab === 'kitchen' || tab === 'staff'){
+          render();
+        } else {
+          const kPill = document.querySelector('[data-act="tab"][data-t="kitchen"]');
+          const sPill = document.querySelector('[data-act="tab"][data-t="staff"]');
+          const kAct = liveOrders.filter(o=>(!o.type||o.type==='restaurant:shyadri'||o.type==='restaurant')&&o.status!=='delivered'&&o.status!=='rejected').length;
+          const sAct = liveOrders.filter(o=>(o.type==='hotel:shyadri'||o.type==='hotel')&&o.status!=='completed').length;
+          if(kPill) kPill.textContent = '🍳 Kitchen (' + kAct + ')';
+          if(sPill) sPill.textContent = '🛎️ Front Desk (' + sAct + ')';
+        }
+      }
+    })
+    .catch(err => console.warn('Fetch live orders error:', err));
+}
+
 async function boot(){
  if(!SB)return fail('Setup needed','Add your Supabase URL and anon key in public/config.js, then redeploy.');
  try{await fetchConfig()}catch(e){return fail('Could not load the site',(e&&e.message)||'Unknown error')}
  AI=true;
+ if(admin && !isRoomLocked) tab = 'kitchen';
+ fetchLiveOrders();
+ setInterval(fetchLiveOrders, 3500);
  render();
- document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden){refresh();fetchLiveOrders();}});
 }
 boot();
