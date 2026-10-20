@@ -610,3 +610,42 @@ label{font:700 .85rem var(--b);color:var(--mu);display:block}
 .obar .btn{width:100%}
 
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;translate:none}}
+
+/* -- ROOM BADGE & LOCK -- */
+.room-pill{display:inline-flex;align-items:center;gap:6px;background:#2b2118;color:#ffe2b0;padding:6px 14px;border-radius:999px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:.9rem;border:2.5px solid #ffb938;box-shadow:3px 3px 0 #2b2118;margin-bottom:8px}
+.r-dot{width:8px;height:8px;border-radius:50%;background:#2aa876;display:inline-block;animation:rPulse 1.4s infinite}
+@keyframes rPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+.r-vtag{background:#2aa876;color:#fff;font-size:.65rem;padding:2px 6px;border-radius:6px;text-transform:uppercase}
+
+/* -- KITCHEN & STAFF DASHBOARDS -- */
+.dtopbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;padding:8px 12px;background:#fff;border:2.5px solid #2b2118;border-radius:12px;box-shadow:3px 3px 0 #2b2118}
+.dpulse{display:inline-flex;align-items:center;gap:8px;font-size:.84rem}
+.dpulse i{width:9px;height:9px;border-radius:50%;background:#e4553a;display:inline-block;animation:rPulse 1.2s infinite}
+.staff-alert-banner{background:#FFF3CD;border:2.5px solid #856404;color:#856404;padding:10px 14px;margin-bottom:12px;border-radius:12px;font-size:.85rem;font-weight:700}
+.filter-bar{display:flex;gap:8px;margin-bottom:14px}
+.fbtn{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:.82rem;padding:6px 14px;border:2.5px solid #2b2118;background:#fff;border-radius:10px;cursor:pointer;box-shadow:2px 2px 0 #2b2118}
+.fbtn.on{background:#ffb938}
+.ord-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.ord-card{background:#fff;border:3px solid #2b2118;border-radius:14px;box-shadow:5px 5px 0 #2b2118;padding:14px;display:flex;flex-direction:column;gap:10px}
+.ord-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px dashed #2b2118;padding-bottom:8px}
+.ord-room{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.4rem;background:#2b2118;color:#ffe2b0;padding:2px 10px;border-radius:8px}
+.ord-meta{text-align:right;font-size:.78rem;color:#7d6f60}
+.ord-items{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px}
+.ord-item{display:flex;justify-content:space-between;font-size:.92rem;border-bottom:1px dotted #ccc;padding:3px 0}
+.ord-note{background:#fff7ea;border-left:4px solid #e4553a;padding:6px 10px;font-size:.85rem;font-style:italic;border-radius:4px}
+.ord-foot{display:flex;justify-content:space-between;align-items:center;border-top:2px dashed #2b2118;padding-top:8px}
+.ord-tot{font-family:'Baloo 2',sans-serif;font-size:1.25rem;font-weight:800}
+.ord-badge{font-size:.7rem;padding:3px 8px;border-radius:6px;border:2px solid #2b2118;text-transform:uppercase;font-weight:700}
+.b-pending{background:#ffb938}
+.b-accepted{background:#b8f0e6}
+.b-ready{background:#ffd2c2}
+.b-delivered{background:#c9f0c0}
+.b-rejected{background:#e8e4d8;color:#999;text-decoration:line-through}
+.ord-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.btn-act{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:.8rem;padding:6px 12px;border:2.5px solid #2b2118;border-radius:8px;cursor:pointer;box-shadow:2px 2px 0 #2b2118;transition:transform .1s}
+.btn-act:hover{transform:translate(-1px,-1px)}
+.btn-accept{background:#b8f0e6}
+.btn-ready{background:#ffb938}
+.btn-deliver{background:#c9f0c0}
+.btn-reject{background:#ffd2c2;color:#b32400}
+.empty-box{padding:26px;text-align:center;font-weight:700;background:#fff;border:2.5px dashed #2b2118;border-radius:14px;color:#7d6f60}
