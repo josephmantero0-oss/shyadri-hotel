@@ -50,7 +50,7 @@ function guest(){
  return `<div class="adm">${isRoomLocked ? `<span class="top-room-badge"><i class="top-r-dot"></i>ROOM ${esc(ord.room||lockedRoom)}</span>` : `<button data-act="login">Admin</button>`}</div><div class="wrap">
  <div class="sky ${k.n?'night':''}" id="sky" data-act="owl" style="--s1:${k.c[0]};--s2:${k.c[1]}">${k.n?'<i class="stars"></i>':''}<i class="orb" style="left:${k.l}%;top:${k.t}%;">${k.n?'🌙':'☀️'}</i><i class="cloud"></i><i class="cloud c2"></i><i class="hill h1"></i><i class="hill h2"></i><div class="bubble pop" id="say" data-act="owl">${esc(H[1])}</div><button class="owlb" data-act="owl" aria-label="Tap Deck the owl">${OWL}</button><div class="rail"></div></div>
  <header class="hero">
-  ${ord.room ? `<div class="room-pill"><span class="r-dot"></span><b>ROOM ${esc(ord.room)}</b><span class="r-vtag">✓ Verified Link</span></div>` : ''}
+  
   <h1>${esc(S.hotel.name)}</h1><span class="tag">${esc(S.hotel.tagline)}</span>
 </header>
  ${nt}
@@ -738,7 +738,7 @@ let fp = { open: false, cat: 0, q: '', veg: false, view: 'menu', sent: '' };
 try {
   const g = JSON.parse(localStorage.getItem('sh_guest') || '{}');
   if (g.name) ord.name = g.name;
-  if (!isRoomLocked && g.room) ord.room = g.room;
+  
 } catch (e) {}
 if (isRoomLocked) {
   ord.room = lockedRoom;
@@ -788,7 +788,7 @@ function paintOrder(){const d=$('#odyn');if(d)d.innerHTML=odyn();const f=$('#ofw
 function afterQty(k,t){if(k[0]==='f'){if(fp.view==='checkout')return paintFood();const c=t.closest('.fctl');if(c)c.innerHTML=fCtl(k);const b=$('#fbar');if(b)b.innerHTML=fBar()}else{const sp=t.parentElement.querySelector('span');if(sp)sp.textContent=qty(k);const sm=$('#osum');if(sm)sm.textContent=sumText(ord.tab);const tb=document.querySelector('.otabs .pill.on');if(tb&&ord.tab==='toil'){const c=cnt('toil');tb.textContent='🧴 Toiletries'+(c?` (${c})`:'')}const o=$('#ofw');if(o)o.innerHTML=obar()}}
 function validate(tab){if(isRoomLocked){ord.room=lockedRoom;}if(ord.name.trim().length<2)return 'Please enter your name.';if(!ord.room.trim())return 'Please enter your room number.';if(tab==='msg'){if(!ord.msg.trim())return 'Please write your message.'}else if(!cnt(tab))return 'Add at least one item.';return ''}
 function sendOrder(kind,tab){ord.err=validate(tab);const e=$(tab==='food'?'#ferr':'#oerr');if(e)e.textContent=ord.err;if(ord.err)return;
- try{localStorage.setItem('sh_guest',JSON.stringify({name:ord.name.trim(),room:ord.room.trim()}))}catch(x){}
+ try{localStorage.setItem('sh_guest',JSON.stringify({name:ord.name.trim()}))}catch(x){}
  if(kind==='copy'){const m=buildMsg(false,tab);(navigator.clipboard?navigator.clipboard.writeText(m):Promise.reject()).then(()=>toast('Order copied')).catch(()=>toast('Copy not available'));return}
  const d=dest(tab),wa=num(d.wa),sm=num(d.sms)||wa,u=kind==='wa'?`https://wa.me/${wa}?text=${encodeURIComponent(buildMsg(true,tab))}`:`sms:+${sm}?&body=${encodeURIComponent(buildMsg(false,tab))}`;
  // Background push to Kitchen & Staff Dashboard in Supabase
