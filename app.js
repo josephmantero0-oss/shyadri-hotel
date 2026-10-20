@@ -1,3 +1,7 @@
+// Locked per-room URL detection
+const urlParams = new URLSearchParams(window.location.search);
+const lockedRoom = (urlParams.get('room') || urlParams.get('r') || '').trim();
+const isRoomLocked = Boolean(lockedRoom);
 let S=null;
 function normalize(){
  S.hotel=S.hotel||{name:'Hotel',tagline:'',phone:'',ai_info:''};
@@ -17,7 +21,7 @@ const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"'
 const uid=()=>Math.random().toString(36).slice(2,8);
 const sha=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(x=>x.toString(16).padStart(2,'0')).join('');
 let admin=false,login=false,tab='notices',mcat=0,ci=0,q='',vegOnly=false,delArm=-1;
-try{admin=sessionStorage.getItem('sh_admin')==='1'}catch(e){}
+try{admin=(!isRoomLocked && sessionStorage.getItem('sh_admin')==='1')}catch(e){}
 
 const greet=()=>{const h=new Date().getHours();return h<5?'Good night':h<12?'Good morning':h<17?'Good afternoon':h<21?'Good evening':'Good night'};
 const url=u=>/^https?:\/\//i.test(u)?u:'';
@@ -43,7 +47,7 @@ function skyInfo(){
 function guest(){
  const k=skyInfo(),ph=String(S.hotel.phone).replace(/[^+\d]/g,''),rv=url(S.review),H=hi();
  const nt=S.notices.slice().reverse().map(n=>`<div class="card note rv"><b>From the front desk</b><p style="margin:4px 0">${esc(n.t)}</p><small>${esc(n.time)}</small></div>`).join('');
- return `<div class="adm"><button data-act="login">Admin</button></div><div class="wrap">
+ return `<div class="adm">${isRoomLocked ? `<span class="top-room-badge"><i class="top-r-dot"></i>ROOM ${esc(ord.room||lockedRoom)}</span>` : `<button data-act="login">Admin</button>`}</div><div class="wrap">
  <div class="sky ${k.n?'night':''}" id="sky" data-act="owl" style="--s1:${k.c[0]};--s2:${k.c[1]}">${k.n?'<i class="stars"></i>':''}<i class="orb" style="left:${k.l}%;top:${k.t}%;">${k.n?'🌙':'☀️'}</i><i class="cloud"></i><i class="cloud c2"></i><i class="hill h1"></i><i class="hill h2"></i><div class="bubble pop" id="say" data-act="owl">${esc(H[1])}</div><button class="owlb" data-act="owl" aria-label="Tap Deck the owl">${OWL}</button><div class="rail"></div></div>
  <header class="hero">
   ${ord.room ? `<div class="room-pill"><span class="r-dot"></span><b>ROOM ${esc(ord.room)}</b><span class="r-vtag">✓ Verified Link</span></div>` : ''}
@@ -198,7 +202,7 @@ function reveal(){const e=document.querySelectorAll('.rv');if(!('IntersectionObs
 function toast(m){const d=document.createElement('div');d.className='toast';d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),1800)}
 const mm=()=>{const e=$('#mm');if(e)e.innerHTML=menuBlock()};
 document.addEventListener('input',e=>{if(e.target.id==='q'){q=e.target.value;mm()}if(e.target.id==='vg'){vegOnly=e.target.checked;mm()}});
-function render(){$('#app').innerHTML=admin?adminView():guest();reveal();const p=$('#pw');if(p)p.focus()}
+function render(){$('#app').innerHTML=(admin && !isRoomLocked)?adminView():guest();reveal();const p=$('#pw');if(p)p.focus()}
 const st=m=>{const e=$('#st');if(e)e.textContent=m};
 async function save(){st('Saving…');try{const {data,error}=await SB.from('site_config').update({data:S,updated_at:new Date().toISOString()}).eq('id',1);if(error)throw error;st('Saved. Guests see changes when they open or refresh the page.')}catch(e){st('Could not save: '+((e&&e.message)||'unknown error'))}}
 function setPath(path,v){const k=path.split('.');let o=S;for(let i=0;i<k.length-1;i++)o=o[k[i]];o[k[k.length-1]]=v}
@@ -232,9 +236,9 @@ async function act(a,t){const i=+t.dataset.i,j=+t.dataset.j;
  else if(a==='pick'){pick(t)}
  else if(a==='go'){const d=t.dataset.t;d==='top'?scrollTo({top:0,behavior:'smooth'}):document.getElementById(d).scrollIntoView({behavior:'smooth'})}
  else if(a==='copy'){try{await navigator.clipboard.writeText(t.dataset.v);toast('Copied ✓');say('Copied! वायफाय तयार 📶');boom(t)}catch(e){t.textContent='Select & copy manually'}}
- else if(a==='login'){login=true;render()}
+ else if(a==='login'){if(isRoomLocked)return;login=true;render()}
  else if(a==='closelogin'){login=false;render()}
- else if(a==='dologin'){
+ else if(a==='dologin'){if(isRoomLocked)return;
    const inputPw=($('#pw')||{}).value||'';
    const inputHash=await sha(inputPw);
    const currentHash=S.pw||'f549436ca88326a9ab1dd189c8f26e20ee3e357cdcc5a8138a0d38af222f5d7e';
@@ -715,21 +719,6 @@ async function chatSend(pre){
  }, delay);
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='cin')chatSend()});
-// URL Room detection & persistent room locking
-const urlParams = new URLSearchParams(window.location.search);
-const lockedRoom = (urlParams.get('room') || urlParams.get('r') || '').trim();
-let ord={open:false,view:'browse',tab:'toil',cart:{},msg:'',name:'',room:'',note:'',sent:'',sentTab:'',err:''};
-let isRoomLocked = false;
-if(lockedRoom){
-  ord.room = lockedRoom;
-  isRoomLocked = true;
-  try{ sessionStorage.setItem('locked_room', lockedRoom); }catch(e){}
-} else {
-  try{
-    const saved = sessionStorage.getItem('locked_room');
-    if(saved){ ord.room = saved; isRoomLocked = true; }
-  }catch(e){}
-}
 let adminTab='kitchen',kitchenFilter='active',liveOrders=[],soundEnabled=true,lastKnownOrderIds=new Set();
 function playChime(){
   if(!soundEnabled)return;
@@ -744,8 +733,16 @@ function playChime(){
     o.start();o.stop(c.currentTime+0.6);
   }catch(e){}
 }
-let fp={open:false,cat:0,q:'',veg:false,view:'menu',sent:''};
-try{const g=JSON.parse(localStorage.getItem('sh_guest')||'{}');ord.name=g.name||'';ord.room=g.room||''}catch(e){}
+let ord = { open: false, view: 'browse', tab: 'toil', cart: {}, msg: '', name: '', room: lockedRoom, note: '', sent: '', sentTab: '', err: '' };
+let fp = { open: false, cat: 0, q: '', veg: false, view: 'menu', sent: '' };
+try {
+  const g = JSON.parse(localStorage.getItem('sh_guest') || '{}');
+  if (g.name) ord.name = g.name;
+  if (!isRoomLocked && g.room) ord.room = g.room;
+} catch (e) {}
+if (isRoomLocked) {
+  ord.room = lockedRoom;
+}
 const num=s=>{let d=String(s||'').replace(/\D/g,'');if(d.length===10)d='91'+d;return d.length>=11?d:''};
 const dest=t=>t==='food'?S.order.food:S.order.desk;
 const canOrder=()=>!!(S.order.on&&[S.order.food,S.order.desk].some(d=>num(d.wa)||num(d.sms)));
@@ -765,7 +762,7 @@ function fList(){const n=fp.q.toLowerCase(),src=fp.q?S.menu.flatMap(x=>x.items):
  const it=src.filter(i=>(!fp.veg||i.v)&&(!n||(i.n+' '+i.d).toLowerCase().includes(n))).map(fCard).join('')||'<p class="mu" style="padding:14px 0">No dishes match.</p>';
  return (fp.q?'':`<div class="pills sticky">${S.menu.map((x,i)=>`<button class="pill ${i===fp.cat?'on':''}" data-act="fcat" data-i="${i}">${esc(x.cat)}</button>`).join('')}</div>`)+it}
 function fBar(){const c=cnt('food'),t=tot('food');return c?`<button class="btn" data-act="freview">View order · ${c} item${c>1?'s':''}${t?' · Rs '+t:''}</button>`:''}
-function formHtml(tab){const f=tab==='food',p=f?'f':'o',d=dest(tab),wa=num(d.wa),sm=num(d.sms)||wa;
+function formHtml(tab){if(isRoomLocked){ord.room=lockedRoom;}const f=tab==='food',p=f?'f':'o',d=dest(tab),wa=num(d.wa),sm=num(d.sms)||wa;
  return `<div class="oform"><div class="two"><input id="${p}n" placeholder="Your name *" maxlength="60" value="${esc(ord.name)}" autocomplete="name">${isRoomLocked ? `<div style="display:flex;flex-direction:column;flex:1"><input id="${p}r" placeholder="Room no." maxlength="10" value="${esc(ord.room)}" readonly style="background:#e8e4d8;cursor:not-allowed;font-weight:700"><small style="color:#2aa876;font-size:0.75rem;margin-top:2px;font-weight:700">🔒 Room ${esc(ord.room)} verified</small></div>` : `<input id="${p}r" placeholder="Room no. *" maxlength="10" value="${esc(ord.room)}">`}</div><input id="${p}x" placeholder="Extra note (optional)" maxlength="300" value="${esc(ord.note)}"><div class="odest">${TL[tab]}</div>${f?'':`<div class="osum" id="osum">${sumText(tab)}</div>`}<div class="oerr" id="${f?'ferr':'oerr'}">${esc(ord.err)}</div><div class="oalert" style="margin:10px 0 12px;padding:10px 14px;background:rgba(255,107,74,0.12);color:#b32400;border:1px solid rgba(255,107,74,0.35);border-radius:10px;font-size:0.83rem;line-height:1.45;text-align:left">⚠️ <b>Notice:</b> Spam and fake orders will be tracked and strict actions will be applied. Please place orders only if you are an in-house hotel guest. Thank you!<br><small style="opacity:0.9">फसव्या किंवा बनावट ऑर्डर्सवर कडक कारवाई केली जाईल. कृपया केवळ हॉटेलमधील पाहुण्यांनीच ऑर्डर करावी.</small></div>${wa||sm?'':'<p class="mu" style="font-size:.9rem;margin:4px 0 8px">Reception has not set up the ordering number yet. Tap Copy order and show it at reception, or call.</p>'}<div class="osend">${wa?`<button class="btn" data-act="${p}wa">Send on WhatsApp</button>`:''}${sm?`<button class="btn g" data-act="${p}sms">Send as SMS</button>`:''}<button class="btn g" data-act="${p}copy">Copy order</button></div></div>`}
 function fCheck(){
  if(fp.view==='sent')return `<div class="ocnf"><h2>Almost done!</h2><p>${fp.sent==='wa'?'WhatsApp':'Your messaging app'} has opened with your food order. <b>Press Send there to place it.</b> If nothing opened, go back and tap Copy order, then show it at reception.</p><div class="osend"><button class="btn g" data-act="fcheckback">Back</button><button class="btn" data-act="fnew">New order</button></div></div>`;
@@ -789,7 +786,7 @@ function obar(){if(!S.order.on||ord.sent||ord.view==='checkout')return '';if(ord
 function orderUI(){return `<div class="osheet ${ord.open?'open':''}" id="osheet"><div class="oh"><b>Room help: toiletries and messages</b><button data-act="oclose" aria-label="Close">✕</button></div><div id="odyn">${odyn()}</div><div id="ofw">${obar()}</div></div>`}
 function paintOrder(){const d=$('#odyn');if(d)d.innerHTML=odyn();const f=$('#ofw');if(f)f.innerHTML=obar()}
 function afterQty(k,t){if(k[0]==='f'){if(fp.view==='checkout')return paintFood();const c=t.closest('.fctl');if(c)c.innerHTML=fCtl(k);const b=$('#fbar');if(b)b.innerHTML=fBar()}else{const sp=t.parentElement.querySelector('span');if(sp)sp.textContent=qty(k);const sm=$('#osum');if(sm)sm.textContent=sumText(ord.tab);const tb=document.querySelector('.otabs .pill.on');if(tb&&ord.tab==='toil'){const c=cnt('toil');tb.textContent='🧴 Toiletries'+(c?` (${c})`:'')}const o=$('#ofw');if(o)o.innerHTML=obar()}}
-function validate(tab){if(ord.name.trim().length<2)return 'Please enter your name.';if(!ord.room.trim())return 'Please enter your room number.';if(tab==='msg'){if(!ord.msg.trim())return 'Please write your message.'}else if(!cnt(tab))return 'Add at least one item.';return ''}
+function validate(tab){if(isRoomLocked){ord.room=lockedRoom;}if(ord.name.trim().length<2)return 'Please enter your name.';if(!ord.room.trim())return 'Please enter your room number.';if(tab==='msg'){if(!ord.msg.trim())return 'Please write your message.'}else if(!cnt(tab))return 'Add at least one item.';return ''}
 function sendOrder(kind,tab){ord.err=validate(tab);const e=$(tab==='food'?'#ferr':'#oerr');if(e)e.textContent=ord.err;if(ord.err)return;
  try{localStorage.setItem('sh_guest',JSON.stringify({name:ord.name.trim(),room:ord.room.trim()}))}catch(x){}
  if(kind==='copy'){const m=buildMsg(false,tab);(navigator.clipboard?navigator.clipboard.writeText(m):Promise.reject()).then(()=>toast('Order copied')).catch(()=>toast('Copy not available'));return}
@@ -817,7 +814,7 @@ function sendOrder(kind,tab){ord.err=validate(tab);const e=$(tab==='food'?'#ferr
  }
  const a=document.createElement('a');a.href=u;if(kind==='wa'){a.target='_blank';a.rel='noopener'}document.body.appendChild(a);a.click();a.remove();
  if(tab==='food'){fp.view='sent';fp.sent=kind;paintFood()}else{ord.sent=kind;ord.sentTab=tab;paintOrder()}boom($(tab==='food'?'#fpage':'#osheet'))}
-document.addEventListener('input',e=>{const i=e.target.id,v=e.target.value;if(i==='on'||i==='fn')ord.name=v;else if(i==='or'||i==='fr')ord.room=v;else if(i==='ox'||i==='fx')ord.note=v;else if(i==='omsg'){ord.msg=v;const f=$('#ofw');if(f)f.innerHTML=obar()}else if(i==='fs'){fp.q=v;const l=$('#flist');if(l)l.innerHTML=fList()}else if(i==='fv'){fp.veg=e.target.checked;const l=$('#flist');if(l)l.innerHTML=fList()}});
+document.addEventListener('input',e=>{const i=e.target.id,v=e.target.value;if(i==='on'||i==='fn')ord.name=v;else if(i==='or'||i==='fr'){if(!isRoomLocked)ord.room=v;}else if(i==='ox'||i==='fx')ord.note=v;else if(i==='omsg'){ord.msg=v;const f=$('#ofw');if(f)f.innerHTML=obar()}else if(i==='fs'){fp.q=v;const l=$('#flist');if(l)l.innerHTML=fList()}else if(i==='fv'){fp.veg=e.target.checked;const l=$('#flist');if(l)l.innerHTML=fList()}});
 document.addEventListener('pointermove',e=>{const sk=$('#sky'),o=$('#owl');if(!sk||!o)return;const r=sk.getBoundingClientRect();sk.style.setProperty('--px',((e.clientX-r.left)/r.width-.5).toFixed(3));sk.style.setProperty('--py',((e.clientY-r.top)/r.height-.5).toFixed(3));const b=o.getBoundingClientRect(),dx=e.clientX-(b.left+b.width/2),dy=e.clientY-(b.top+b.height/2),d=Math.hypot(dx,dy)||1,k=Math.min(5,d/40);o.querySelectorAll('.pup').forEach(p=>p.style.transform=`translate(${dx/d*k}px,${dy/d*k}px)`)});
 
 const CFG=window.APP_CONFIG||{};

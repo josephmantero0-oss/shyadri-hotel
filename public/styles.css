@@ -649,3 +649,27 @@ label{font:700 .85rem var(--b);color:var(--mu);display:block}
 .btn-deliver{background:#c9f0c0}
 .btn-reject{background:#ffd2c2;color:#b32400}
 .empty-box{padding:26px;text-align:center;font-weight:700;background:#fff;border:2.5px dashed #2b2118;border-radius:14px;color:#7d6f60}
+
+/* ── TOP ROOM BADGE (Replaces Admin on Room Links) ── */
+.top-room-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:#261810;
+  color:#ffd9cf;
+  border:2px solid #e4553a;
+  border-radius:999px;
+  padding:4px 12px;
+  font:800 .78rem var(--d);
+  box-shadow:2px 2px 0 #180e08;
+  letter-spacing:.05em;
+  user-select:none;
+}
+.top-r-dot{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#2aa876;
+  display:inline-block;
+  animation:rPulse 1.4s infinite;
+}
