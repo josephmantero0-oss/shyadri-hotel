@@ -397,10 +397,16 @@ async function act(a,t){const i=+t.dataset.i,j=+t.dataset.j;
    const oid = t.dataset.id;
    const box = document.getElementById('revbox_' + oid);
    const txt = (box && box.querySelector('.trb-fb-txt')) ? box.querySelector('.trb-fb-txt').value.trim() : '';
+   const prevState = reviewBoxState[oid];
+   const score = prevState ? prevState.score : null;
    reviewBoxState[oid] = { status: 'feedback_submitted', text: txt };
    const tc = document.querySelector('#tracksheet .track-sheet-content');
    if(tc) tc.innerHTML = renderGuestOrdersList();
    toast('Feedback submitted!');
+   if(txt && SB){
+     SB.from('orders').update({ guest_feedback: txt, guest_star: score }).eq('id', oid)
+       .then(()=>{}).catch(e=>console.warn('Feedback save:', e));
+   }
  }
  else if(a==='cancelprivfb'){
    const oid = t.dataset.id;
@@ -1103,7 +1109,7 @@ async function boot(){
  AI=true;
  if(admin && !isRoomLocked) tab = 'kitchen';
  fetchLiveOrders();
- setInterval(fetchLiveOrders, 5000);
+ setInterval(fetchLiveOrders, admin && !isRoomLocked ? 5000 : 60000);
  render();
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){refresh();fetchLiveOrders();}});
 }
