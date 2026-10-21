@@ -811,8 +811,6 @@ function smartReply(q){
    return `📞 Front Desk Contact:\nPhone: ${S.hotel.phone || 'Available at reception'}\nHotel: ${S.hotel.name} (${S.hotel.tagline || ''})\n\nFeel free to call or visit us for any assistance!`;
  }
 
- 
- }
 
  // 13. Friendly Greetings
  if(text.includes('hi') || text.includes('hello') || text.includes('hey') || text.includes('नमस्कार') || text.includes('namaste') || text.includes('good morning') || text.includes('good evening')){
