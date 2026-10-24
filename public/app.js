@@ -43,9 +43,9 @@ function trackBanner(){ return ''; }
 function trackUI(){
   if(admin) return '';
   return '<div class="osheet ' + (trackSheetOpen ? 'open' : '') + '" id="tracksheet">'
-    + '<div class="oh">'
-    + '<b>🛵 Live Room Orders & Requests</b>'
-    + '<button data-act="closetrack" aria-label="Close">✕</button>'
+    + '<div class="oh" style="background:#ffffff !important;border-bottom:1.5px solid #ede5d8 !important;color:#14110F !important">'
+    + '<b style="color:#14110F !important;font-weight:800 !important;font-size:1.05rem">🛎️ Live Room Orders & Requests</b>'
+    + '<button data-act="closetrack" aria-label="Close" style="color:#14110F !important;font-weight:800 !important;font-size:1.4rem !important;opacity:1 !important;cursor:pointer">✕</button>'
     + '</div>'
     + '<div class="track-sheet-content">'
     + renderGuestOrdersList()
@@ -203,7 +203,7 @@ function guest(){
  <section class="card rv" id="rules"><h2>📜 House rules</h2><ol>${S.rules.map(r=>`<li>${esc(r)}</li>`).join('')}</ol></section>
  ${rv?`<section class="card rv" id="review" style="background:#ffe9e2"><h2>Loved your stay? 🧡</h2><p style="margin-top:0">A quick Google review means a lot to our team!</p><a class="btn" href="${esc(rv)}" target="_blank" rel="noopener">⭐ Leave a review</a></section>`:''}
  <p class="foot">Hoot hoot! Thanks for staying with ${esc(S.hotel.name)} 🦉</p></div>
- <nav class="dock"><button data-act="go" data-t="top"><i>🏠</i>Home</button><button data-act="go" data-t="menu"><i>🍽️</i>Menu</button><button data-act="food"><i>🛎️</i>Order</button><button data-act="opentrack" id="docktrack"><i>🛵</i>Track${getActiveGuestOrders().length ? `<b class="dock-badge">${getActiveGuestOrders().length}</b>` : ''}</button><button data-act="go" data-t="wifi"><i>📶</i>WiFi</button><button data-act="go" data-t="rules"><i>📜</i>Rules</button></nav>
+ <nav class="dock"><button data-act="go" data-t="top"><i>🏠</i>Home</button><button data-act="go" data-t="menu"><i>🍽️</i>Menu</button><button data-act="food"><i>🛎️</i>Order</button><button data-act="opentrack" id="docktrack"><i>🛎️</i>Track${getActiveGuestOrders().length ? `<b class="dock-badge">${getActiveGuestOrders().length}</b>` : ''}</button><button data-act="go" data-t="wifi"><i>📶</i>WiFi</button><button data-act="go" data-t="rules"><i>📜</i>Rules</button></nav>
  ${foodPage()}${orderUI()}${trackUI()}${chatUI()}${login?loginModal():''}`;
 }
 function inp(k,v,ph,cls){return `<input ${cls?`class="${cls}" `:''}data-k="${k}" value="${esc(v)}" placeholder="${ph}">`}
@@ -1110,7 +1110,7 @@ async function boot(){
  AI=true;
  if(admin && !isRoomLocked) tab = 'kitchen';
  fetchLiveOrders();
- setInterval(fetchLiveOrders, admin && !isRoomLocked ? 5000 : 60000);
+ setInterval(fetchLiveOrders, 15000); // 15s polling for all views
  render();
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){refresh();fetchLiveOrders();}});
 }
